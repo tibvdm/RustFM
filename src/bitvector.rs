@@ -1,32 +1,48 @@
-use std::ops::{ 
-    Index, 
-    IndexMut
-};
+use std::ops::{ Index };
+use bitintr::Popcnt;
 
-const ULL1: usize = 1;
+const ULL1: u64 = 1;
 
 /// Bitvector with Jacobson’s rank
 pub struct Bitvec {
     /// Size of the bitvector
-    N: usize,
+    n: usize,
 
     /// The bitvector
-    bitvector: Vec<usize>,
+    bitvector: Vec<u64>,
 
     /// Interleaved first and second level counts
     counts: Vec<usize>
 }
 
 impl Bitvec {
-    pub fn new(N: usize) -> Self {
-        let bitvector = vec![0, (N + 63) / 64];
-        let counts    = vec![0, (N + 63) / 64]; // TODO: incorrect
-        Bitvec { N, bitvector, counts }
+    pub fn new(n: usize) -> Self {
+        let bitvector = vec![0, (n as u64 + 63) / 64];
+        let counts    = vec![0, (n + 7)  / 4 ];
+        Bitvec { n, bitvector, counts }
     }
 
     /// Index the bitvector by calculating the count levels
-    pub fn index() {
-        // TODO
+    pub fn index(&mut self) {
+        let mut level1_counts: usize = 0;
+        let mut level2_counts: usize = 0;
+
+        let mut q: usize = 0;
+        for w in 0 .. self.n {
+            if w % 8 == 0 {
+                level1_counts += level2_counts;
+                self.counts[q] = level1_counts;
+
+                // Reset level2 counts
+                level2_counts  = self.bitvector[w].popcnt() as usize;
+
+                // Update interleaving count
+                q += 2
+            } else {
+                self.counts[q - 1] |= level2_counts << (((w % 8) - 1) * 9);
+                level2_counts += self.bitvector[w].popcnt() as usize;
+            }
+        }
     }
 
     /// Check if a bit is set at a given position
