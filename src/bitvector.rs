@@ -14,12 +14,28 @@ pub struct Bitvec {
     counts: Vec<u64>
 }
 
+impl Bitvec {
+    pub fn new(N: usize) -> Self {
+        Bitvec {
+            N,
+            vec![0, N],
+            vec![0, N],
+        }
+    }
+}
+
 impl Index<usize> for Bitvec {
     type Output = bool;
 
     fn index(&self, pos: usize) -> &Self::Output {
         usize word = pos / 64;
         usize bit  = pos % 64;
-        return bitvector[word] & (1L << bit)
+        return bitvector[word] & (1L << bit);
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Bitvec;
+
 }
