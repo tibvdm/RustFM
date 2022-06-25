@@ -1,4 +1,4 @@
-use std::ops::{ Index };
+use std::ops::Index;
 use bitintr::Popcnt;
 
 const ULL1: u64 = 1;
@@ -24,7 +24,7 @@ impl Bitvec {
     }
 
     /// Index the bitvector by calculating the count levels
-    pub fn index(&mut self) {
+    pub fn calculate_counts(&mut self) {
         let mut level1_counts: usize = 0;
         let mut level2_counts: usize = 0;
 
@@ -149,7 +149,7 @@ mod tests {
             bitvector.set(i, true);
         }
 
-        bitvector.index();
+        bitvector.calculate_counts();
 
         assert_eq!(bitvector.rank(20), 20);
         assert_eq!(bitvector.rank(1024), 1024);
