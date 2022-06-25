@@ -17,8 +17,8 @@ pub struct Bitvec {
 
 impl Bitvec {
     pub fn new(n: usize) -> Self {
-        let bitvector = vec![0, (n as u64 + 63) / 64];
-        let counts    = vec![0, (n + 7)  / 4 ];
+        let bitvector = vec![0; (n + 63) / 64];
+        let counts    = vec![0; (n + 7)  / 4 ];
         Bitvec { n, bitvector, counts }
     }
 
@@ -28,7 +28,7 @@ impl Bitvec {
         let mut level2_counts: usize = 0;
 
         let mut q: usize = 0;
-        for w in 0 .. self.n {
+        for w in 0 .. self.bitvector.len() {
             if w % 8 == 0 {
                 level1_counts += level2_counts;
                 self.counts[q] = level1_counts;
@@ -54,14 +54,35 @@ impl Bitvec {
 
     /// Set the bit at a position to a different value
     pub fn set(&mut self, pos: usize, value: bool) {
-        let word: usize = pos / 64;
-        let bit:  usize = pos % 64;
+        let w: usize = pos / 64;
+        let b: usize = pos % 64;
         
         if value {
-            self.bitvector[word] |= ULL1 << bit;
+            self.bitvector[w] |= ULL1 << b;
         } else {
-            self.bitvector[word] &= !(ULL1 << bit);
+            self.bitvector[w] &= !(ULL1 << b);
         }
+    }
+
+    pub fn rank(&self, pos: usize) -> usize {
+        let l1c: usize = self.level1_counts(pos / 64);
+        let l2c: usize = self.level2_counts(pos / 64);
+        return l1c + l2c + self.level3_counts(pos / 64, pos % 64);
+    }
+
+    pub fn level1_counts(&self, w: usize) -> usize {
+        return self.counts[(w / 8) * 2];
+    }
+
+    pub fn level2_counts(&self, w: usize) -> usize {
+        // Interleaved position in counts table
+        let q = (w / 8) * 2; 
+        let t: i64 = (w % 8) as i64 - 1;
+        return self.counts[q + 1] >> (t + (t >> 60 & 8)) * 9 & 0x1FF;
+    }
+
+    pub fn level3_counts(&self, w: usize, b: usize) -> usize {
+        return ((self.bitvector[w] << 1) << (63 - b)).popcnt() as usize;
     }
 }
 
@@ -79,6 +100,8 @@ impl Index<usize> for Bitvec {
 #[cfg(test)]
 mod tests {
     use super::Bitvec;
+
+    const BITVEC_SIZE: usize = 10_000;
 
     #[test]
     fn test_index_operator_empty() {
@@ -106,5 +129,21 @@ mod tests {
         assert_eq!(bitvector[2], true);
         assert_eq!(bitvector[3], true);
         assert_eq!(bitvector[4], true);
+    }
+
+    #[test]
+    fn test_index_function() {
+        let mut bitvector = Bitvec::new(BITVEC_SIZE);
+
+        for i in 0 .. 1024 {
+            bitvector.set(i, true);
+        }
+
+        bitvector.index();
+
+        assert_eq!(bitvector.rank(20), 20);
+        assert_eq!(bitvector.rank(1024), 1024);
+        assert_eq!(bitvector.rank(2048), 1024);
+        assert_eq!(bitvector.rank(2500), 1024);
     }
 }
