@@ -16,6 +16,7 @@ pub struct Bitvec {
 }
 
 impl Bitvec {
+    /// Create a new bitvector
     pub fn new(n: usize) -> Self {
         let bitvector = vec![0; (n + 63) / 64];
         let counts    = vec![0; (n + 7)  / 4 ];
@@ -64,16 +65,19 @@ impl Bitvec {
         }
     }
 
+    // Get the number of set bits in the range 0 to pos
     pub fn rank(&self, pos: usize) -> usize {
         let l1c: usize = self.level1_counts(pos / 64);
         let l2c: usize = self.level2_counts(pos / 64);
         return l1c + l2c + self.level3_counts(pos / 64, pos % 64);
     }
 
+    /// Get the level 1 counts
     pub fn level1_counts(&self, w: usize) -> usize {
         return self.counts[(w / 8) * 2];
     }
 
+    /// Get the level 2 counts
     pub fn level2_counts(&self, w: usize) -> usize {
         // Interleaved position in counts table
         let q = (w / 8) * 2; 
@@ -81,8 +85,14 @@ impl Bitvec {
         return self.counts[q + 1] >> (t + (t >> 60 & 8)) * 9 & 0x1FF;
     }
 
+    /// Get the level 3 counts
     pub fn level3_counts(&self, w: usize, b: usize) -> usize {
         return ((self.bitvector[w] << 1) << (63 - b)).popcnt() as usize;
+    }
+
+    /// Get the length of the bitvector
+    pub fn len(&self) -> usize {
+        return self.n;
     }
 }
 
