@@ -31,15 +31,21 @@ pub struct FMIndex<T: Alphabet> {
 
 impl<T: Alphabet> FMIndex<T> {
     pub fn new(text: String, alphabet: T) -> Self {
+        let bwt = "ACCAGT".to_string();
         let text_length = text.len();
 
-        let counts = vec![0; alphabet.len()];
-        let occurence_table = vec![Bitvec::new(text_length + 1); alphabet.len()];
-        
+        // Initialize the counts table
+        let mut counts = vec![0; alphabet.len()];
+        Self::initialize_counts(&mut counts, &bwt, &alphabet);
+
+        // initialize the occurence table
+        let mut occurence_table = vec![Bitvec::new(text_length + 1); alphabet.len()];
+        Self::initialize_occurence_table(&mut occurence_table, &bwt, &alphabet);
+
         FMIndex {
             text: text,
             text_length: text_length,
-            bwt: "text".to_string(), // TODO
+            bwt: bwt, // TODO
             alphabet: alphabet,
             counts: counts,
             dollar_pos: 0, // TODO
@@ -48,23 +54,34 @@ impl<T: Alphabet> FMIndex<T> {
         }
     }
 
-    pub fn initialize_counts(&mut self) {
+    fn occ(&self, char_i: usize, i: usize) -> usize {
+        if char_i == 0 {
+            return if i > self.dollar_pos { 1 } else { 0 };
+        }
+
+        return self.occurence_table[char_i - 1].rank(i);
+    }
+
+    fn initialize_counts(counts: &mut Vec<usize>, bwt: &String, alphabet: &T) {
         // Calculate counts
-        for c in self.bwt.chars() {
-            self.counts[self.alphabet.c2i(c)] += 1;
+        for c in bwt.chars() {
+            counts[alphabet.c2i(c)] += 1;
         }
 
         // Calculate the cumulative sum
-        for i in 1 .. self.alphabet.len() {
-            self.counts[i] += self.counts[i - 1];
+        for i in 1 .. alphabet.len() {
+            counts[i] += counts[i - 1];
         }
     }
-}
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn test_initialize_counts() {
+    fn initialize_occurence_table(occurence_table: &mut Vec<Bitvec>, bwt: &String, alphabet: &T) {
+        bwt.chars().enumerate().for_each(|(i, c)| {
+            if c != '$' {
+                occurence_table[alphabet.c2i(c)].set(i, true);
+            }
+        });
 
+        // Calculate the counts to allow efficient rank operations
+        //occurence_table.iter().for_each(|mut bv| bv.calculate_counts());
     }
 }
