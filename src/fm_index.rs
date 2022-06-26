@@ -1,8 +1,9 @@
 use crate::bitvector::Bitvec;
+use crate::alphabet::Alphabet;
 use crate::suffix_array::SparseSuffixArray;
 
 /// FM index
-pub struct FMIndex {
+pub struct FMIndex<T: Alphabet> {
     /// The original text
     text: String,
 
@@ -11,6 +12,9 @@ pub struct FMIndex {
 
     /// Burrows Wheeler Transform of the original text
     bwt: String,
+
+    /// The used alphabet
+    alphabet: T,
 
     /// Counts array (TODO: 4 should be a constant somewhere)
     counts: [usize; 4],
@@ -25,7 +29,7 @@ pub struct FMIndex {
     occurence_table: [Bitvec; 4]
 }
 
-impl FMIndex {
+impl<T: Alphabet> FMIndex<T> {
 //    pub fn new() -> Self {
 //
 //    }

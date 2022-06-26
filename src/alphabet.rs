@@ -1,12 +1,12 @@
 pub trait Alphabet {
-    fn i2c(i: usize) -> char;
-    fn c2i(c: char) -> usize;
+    fn i2c(&self, i: usize) -> char;
+    fn c2i(&self, c: char) -> usize;
 }
 
 pub struct DNAAlphabet;
 
 impl Alphabet for DNAAlphabet {
-    fn i2c(i: usize) -> char {
+    fn i2c(&self, i: usize) -> char {
         assert!(i < 4, "The alphabet contains only 4 characters!");
         return match i {
             0 => 'A',
@@ -16,7 +16,7 @@ impl Alphabet for DNAAlphabet {
         }
     }
 
-    fn c2i(c: char) -> usize {
+    fn c2i(&self, c: char) -> usize {
         let i = match c {
             'A' => 0,
             'C' => 1,
