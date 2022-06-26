@@ -82,6 +82,8 @@ impl<T: Alphabet> FMIndex<T> {
         });
 
         // Calculate the counts to allow efficient rank operations
-        //occurence_table.iter().for_each(|mut bv| bv.calculate_counts());
+        for i in 0 .. alphabet.len() {
+            occurence_table[i].calculate_counts();
+        }
     }
 }
