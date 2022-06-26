@@ -88,6 +88,7 @@ impl<T: Alphabet> FMIndex<T> {
     }
 
     fn find_lf(&self, k: usize) -> usize {
+        // Fix this later (String -> &str)
         let i = self.alphabet.c2i(self.bwt.chars().nth(k).unwrap());
         return self.counts[i] + self.occ(i, k);
     }
