@@ -1,3 +1,6 @@
+use crate::bitvector::Bitvec;
+use crate::suffix_array::SparseSuffixArray;
+
 /// FM index
 pub struct FMIndex {
     /// The original text
@@ -18,5 +21,19 @@ pub struct FMIndex {
     /// The sparse suffix array
     sparse_sa: SparseSuffixArray,
 
-    /// TODO: occurence table
+    /// occurence table (TODO: 4 should be a constant somewhere)
+    occurence_table: [Bitvec; 4]
+}
+
+impl FMIndex {
+//    pub fn new() -> Self {
+//
+//    }
+
+    pub fn initialize_counts(&mut self) {
+        for c in self.bwt.chars() {
+            // TODO: fix alphabet
+            println!("TODO");
+        }
+    }
 }
