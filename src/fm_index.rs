@@ -54,14 +54,6 @@ impl<T: Alphabet> FMIndex<T> {
         }
     }
 
-    fn occ(&self, char_i: usize, i: usize) -> usize {
-        if char_i == 0 {
-            return if i > self.dollar_pos { 1 } else { 0 };
-        }
-
-        return self.occurence_table[char_i - 1].rank(i);
-    }
-
     fn initialize_counts(counts: &mut Vec<usize>, bwt: &String, alphabet: &T) {
         // Calculate counts
         for c in bwt.chars() {
@@ -85,5 +77,29 @@ impl<T: Alphabet> FMIndex<T> {
         for i in 0 .. alphabet.len() {
             occurence_table[i].calculate_counts();
         }
+    }
+
+    fn occ(&self, char_i: usize, i: usize) -> usize {
+        if char_i == 0 {
+            return if i > self.dollar_pos { 1 } else { 0 };
+        }
+
+        return self.occurence_table[char_i - 1].rank(i);
+    }
+
+    fn find_lf(&self, k: usize) -> usize {
+        let i = self.alphabet.c2i(self.bwt.chars().nth(k).unwrap());
+        return self.counts[i] + self.occ(i, k);
+    }
+
+    fn find_sa(&self, k: usize) -> usize {
+        let mut i = k;
+        let mut j = 0;
+        while self.sparse_sa.contains(i) {
+            i = self.find_lf(i);
+            j += 1;
+        }
+
+        return self.sparse_sa[i] + j;
     }
 }

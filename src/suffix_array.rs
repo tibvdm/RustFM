@@ -2,7 +2,7 @@ use std::ops::Index;
 
 use crate::bitvector::Bitvec;
 
-type SuffixArray = Vec<u32>;
+type SuffixArray = Vec<usize>;
 
 /// Sparse suffix array for FM indices
 pub struct SparseSuffixArray {
@@ -10,12 +10,12 @@ pub struct SparseSuffixArray {
     bitvector: Bitvec,
 
     /// The sparse suffix array
-    sparse_sa: Vec<u32>
+    sparse_sa: Vec<usize>
 }
 
 impl SparseSuffixArray {
     /// Construct the sparse suffix array from the entire suffix array
-    pub fn from_sa(suffix_array: SuffixArray, sparseness_factor: u32) -> Self {
+    pub fn from_sa(suffix_array: SuffixArray, sparseness_factor: usize) -> Self {
         let mut bitvector = Bitvec::new(suffix_array.len());
         let mut sparse_sa = Vec::new();
 
@@ -38,7 +38,7 @@ impl SparseSuffixArray {
 }
 
 impl Index<usize> for SparseSuffixArray {
-    type Output = u32;
+    type Output = usize;
 
     fn index(&self, pos: usize) -> &Self::Output {
         return &self.sparse_sa[self.bitvector.rank(pos)];
