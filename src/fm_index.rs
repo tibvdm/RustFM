@@ -16,8 +16,8 @@ pub struct FMIndex<T: Alphabet> {
     /// The used alphabet
     alphabet: T,
 
-    /// Counts array (TODO: 4 should be a constant somewhere)
-    counts: [usize; 4],
+    /// Counts array
+    counts: Vec<usize>,
 
     /// Position of the lexicographic smallest item
     dollar_pos: usize,
@@ -25,19 +25,46 @@ pub struct FMIndex<T: Alphabet> {
     /// The sparse suffix array
     sparse_sa: SparseSuffixArray,
 
-    /// occurence table (TODO: 4 should be a constant somewhere)
-    occurence_table: [Bitvec; 4]
+    /// occurence table
+    occurence_table: Vec<Bitvec>
 }
 
 impl<T: Alphabet> FMIndex<T> {
-//    pub fn new() -> Self {
-//
-//    }
+    pub fn new(text: String, alphabet: T) -> Self {
+        let text_length = text.len();
+
+        let counts = vec![0; alphabet.len()];
+        let occurence_table = vec![Bitvec::new(text_length + 1); alphabet.len()];
+        
+        FMIndex {
+            text: text,
+            text_length: text_length,
+            bwt: "text".to_string(), // TODO
+            alphabet: alphabet,
+            counts: counts,
+            dollar_pos: 0, // TODO
+            sparse_sa: SparseSuffixArray::from_sa(vec![0, 1, 2], 1), // TODO
+            occurence_table: occurence_table
+        }
+    }
 
     pub fn initialize_counts(&mut self) {
+        // Calculate counts
         for c in self.bwt.chars() {
-            // TODO: fix alphabet
-            println!("TODO");
+            self.counts[self.alphabet.c2i(c)] += 1;
         }
+
+        // Calculate the cumulative sum
+        for i in 1 .. self.alphabet.len() {
+            self.counts[i] += self.counts[i - 1];
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_initialize_counts() {
+
     }
 }
