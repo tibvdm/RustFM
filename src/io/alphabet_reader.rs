@@ -16,8 +16,6 @@ pub struct AlphabetReader<R: Read, A: Alphabet> {
     alphabet: A
 }
 
-// Idee: hou 16 bits bij. Vanaf er minstens 8 bits weg zijn, lees je een niewe byte in
-
 impl<R: Read, A: Alphabet> AlphabetReader<R, A> {
     /// Create a new AlphabetReader
     pub fn new(reader: R, alphabet: A) -> Self {
@@ -29,7 +27,7 @@ impl<R: Read, A: Alphabet> AlphabetReader<R, A> {
         Self { bytes, current, alphabet }
     }
 
-    /// TODO
+    /// Read the next character in the input string
     pub fn read_character(&mut self) -> Result<Option<char>> {
         let bits_per_char = self.alphabet.bits() as u8;
 
@@ -41,6 +39,8 @@ impl<R: Read, A: Alphabet> AlphabetReader<R, A> {
 
         Ok(Some(self.alphabet.i2c(self.current.get(bits_per_char).into())))
     }
+
+    pub fn chars(self) -> 
 }
 
 /// Keeps track of processed bits (TODO: better name)
@@ -48,7 +48,7 @@ pub struct ProcessedU16 {
     /// 16 bits of data
     double_byte: u16,
 
-    /// Integer indicating the processed bits
+    /// Integer indicating the amount processed bits
     processed: u8
 }
 
@@ -77,6 +77,6 @@ impl ProcessedU16 {
 
 impl Default for ProcessedU16 {
     fn default() -> Self {
-        Self { double_byte: 0, processed: 0 }
+        Self { double_byte: 0, processed: 16 }
     }
 }
