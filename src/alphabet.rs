@@ -2,6 +2,7 @@ pub trait Alphabet {
     fn i2c(&self, i: usize) -> char;
     fn c2i(&self, c: char) -> usize;
     fn len(&self) -> usize;
+    fn bits(&self) -> usize;
 }
 
 pub struct DNAAlphabet;
@@ -33,6 +34,10 @@ impl Alphabet for DNAAlphabet {
 
     fn len(&self) -> usize {
         return 4;
+    }
+
+    fn bits(&self) -> usize {
+        return 2;
     }
 }
 
