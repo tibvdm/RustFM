@@ -1,8 +1,8 @@
 use std::ops::Index;
 
-pub use suffix_array::SuffixArray;
-
 use crate::bitvector::Bitvec;
+
+pub use suffix_array::SuffixArray;
 
 /// Sparse suffix array for FM indices
 pub struct SparseSuffixArray {
