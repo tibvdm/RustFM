@@ -1,5 +1,7 @@
+use std::fmt;
+
 use crate::bitvector::Bitvec;
-use crate::alphabet::{ Alphabet, AlphabetChar };
+use crate::alphabet::{ Alphabet, AlphabetChar, DNAAlphabet };
 use crate::suffix_array::{ SuffixArray, SparseSuffixArray };
 
 /// FM index
@@ -31,14 +33,14 @@ impl<T: Alphabet> FMIndex<T> {
         let text_length = text.len();
 
         // Represent text as a vector
-        let textVec = text.bytes().collect();
+        let text_vec = text.bytes().collect();
 
         // Create the suffix array
         let (_, suffix_array) = SuffixArray::new(text.as_bytes()).into_parts();
 
         // Create BWT from suffix array
         let mut bwt: Vec<AlphabetChar> = vec![0; text_length + 1];
-        let dollar_pos = Self::bwt_from_sa(&suffix_array, &mut bwt, &textVec);
+        let dollar_pos = Self::bwt_from_sa(&suffix_array, &mut bwt, &text_vec);
 
         // Initialize the counts table
         let mut counts = vec![0; alphabet.len()];
@@ -49,7 +51,7 @@ impl<T: Alphabet> FMIndex<T> {
         Self::initialize_occurence_table(&mut occurence_table, &bwt, &alphabet);
 
         FMIndex {
-            text: textVec,
+            text: text_vec,
             bwt: bwt,
             alphabet: alphabet,
             counts: counts,
@@ -76,6 +78,9 @@ impl<T: Alphabet> FMIndex<T> {
     fn initialize_counts(counts: &mut Vec<u32>, bwt: &Vec<AlphabetChar>, alphabet: &T) {
         // Calculate counts
         for c in bwt {
+            if *c == b'$' {
+                continue;
+            }
             counts[alphabet.c2i(*c)] += 1;
         }
 
@@ -122,4 +127,12 @@ impl<T: Alphabet> FMIndex<T> {
 //
 //        return self.sparse_sa[i] + j;
 //    }
+}
+
+impl fmt::Debug for FMIndex<DNAAlphabet> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Text: {:?}\nBWT: {:?}\n", 
+            self.text.iter().map(|x| *x as char).collect::<Vec<char>>(), 
+            self.bwt.iter().map(|x| *x as char).collect::<Vec<char>>())
+    }
 }

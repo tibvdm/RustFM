@@ -1,10 +1,12 @@
-use std::fs::File;
-
 use rust_fm::errors::Result;
+
+use rust_fm::fm_index::FMIndex;
 use rust_fm::alphabet::DNAAlphabet;
 
 fn main() -> Result<()> {
-    let mut file = File::open("./data/a.text")?;
-    
+    let fm_index = FMIndex::new("ACCGTAAC", DNAAlphabet::default()); 
+
+    println!("{:?}", fm_index);
+
     Ok(())
 }
