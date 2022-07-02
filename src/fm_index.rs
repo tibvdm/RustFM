@@ -1,18 +1,15 @@
 use crate::bitvector::Bitvec;
-use crate::alphabet::Alphabet;
+use crate::alphabet::{ Alphabet, AlphabetChar };
 use crate::suffix_array::SuffixArray;
 use crate::suffix_array::SparseSuffixArray;
 
 /// FM index
 pub struct FMIndex<T: Alphabet> {
     /// The original text
-    text: String,
-
-    /// Length of the original text
-    text_length: usize,
+    text: Vec<AlphabetChar>,
 
     /// Burrows Wheeler Transform of the original text
-    bwt: String,
+    bwt: Vec<AlphabetChar>,
 
     /// The used alphabet
     alphabet: T,
@@ -31,8 +28,13 @@ pub struct FMIndex<T: Alphabet> {
 }
 
 impl<T: Alphabet> FMIndex<T> {
-    pub fn new(text: String, alphabet: T) -> Self {
-        let bwt = "ACCAGT".to_string();
+    pub fn new(text: &str, alphabet: T) -> Self {
+        // Represent text as a vector
+        let textVec = text.bytes().collect();
+
+
+
+        let bwt = "ACCAGT".bytes().collect();
         let text_length = text.len();
 
         // Initialize the counts table
@@ -44,8 +46,7 @@ impl<T: Alphabet> FMIndex<T> {
         Self::initialize_occurence_table(&mut occurence_table, &bwt, &alphabet);
 
         FMIndex {
-            text: text,
-            text_length: text_length,
+            text: textVec,
             bwt: bwt, // TODO
             alphabet: alphabet,
             counts: counts,
@@ -55,10 +56,10 @@ impl<T: Alphabet> FMIndex<T> {
         }
     }
 
-    fn initialize_counts(counts: &mut Vec<u32>, bwt: &String, alphabet: &T) {
+    fn initialize_counts(counts: &mut Vec<u32>, bwt: &Vec<AlphabetChar>, alphabet: &T) {
         // Calculate counts
-        for c in bwt.chars() {
-            counts[alphabet.c2i(c)] += 1;
+        for c in bwt {
+            counts[alphabet.c2i(*c)] += 1;
         }
 
         // Calculate the cumulative sum
@@ -67,10 +68,10 @@ impl<T: Alphabet> FMIndex<T> {
         }
     }
 
-    fn initialize_occurence_table(occurence_table: &mut Vec<Bitvec>, bwt: &String, alphabet: &T) {
-        bwt.chars().enumerate().for_each(|(i, c)| {
-            if c != '$' {
-                occurence_table[alphabet.c2i(c)].set(i, true);
+    fn initialize_occurence_table(occurence_table: &mut Vec<Bitvec>, bwt: &Vec<AlphabetChar>, alphabet: &T) {
+        bwt.iter().enumerate().for_each(|(i, c)| {
+            if *c != b'$' {
+                occurence_table[alphabet.c2i(*c)].set(i, true);
             }
         });
 
