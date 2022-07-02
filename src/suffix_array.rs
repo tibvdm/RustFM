@@ -1,8 +1,8 @@
 use std::ops::Index;
 
-use crate::bitvector::Bitvec;
+pub use suffix_array::SuffixArray;
 
-type SuffixArray = Vec<usize>;
+use crate::bitvector::Bitvec;
 
 /// Sparse suffix array for FM indices
 pub struct SparseSuffixArray {
@@ -10,18 +10,20 @@ pub struct SparseSuffixArray {
     bitvector: Bitvec,
 
     /// The sparse suffix array
-    sparse_sa: Vec<usize>
+    sparse_sa: Vec<u32>
 }
 
 impl SparseSuffixArray {
     /// Construct the sparse suffix array from the entire suffix array
-    pub fn from_sa(suffix_array: SuffixArray, sparseness_factor: usize) -> Self {
+    pub fn from_sa(suffix_array: SuffixArray, sparseness_factor: u32) -> Self {
         let mut bitvector = Bitvec::new(suffix_array.len());
         let mut sparse_sa = Vec::new();
 
-        for i in 0 .. suffix_array.len() {
-            if suffix_array[i] % sparseness_factor == 0 {
-                sparse_sa.push(suffix_array[i]);
+        let (_, sa) = suffix_array.into_parts();
+
+        for i in 0 .. sa.len() {
+            if sa[i] % sparseness_factor == 0 {
+                sparse_sa.push(sa[i]);
                 bitvector.set(i, true);
             }
         }
@@ -32,15 +34,15 @@ impl SparseSuffixArray {
     }
 
     /// Check whether the sparse suffix array contains the value at a position
-    pub fn contains(&self, pos: usize) -> bool {
-        return self.bitvector[pos];
+    pub fn contains(&self, pos: u32) -> bool {
+        return self.bitvector[pos as usize];
     }
 }
 
-impl Index<usize> for SparseSuffixArray {
-    type Output = usize;
+impl Index<u32> for SparseSuffixArray {
+    type Output = u32;
 
-    fn index(&self, pos: usize) -> &Self::Output {
-        return &self.sparse_sa[self.bitvector.rank(pos)];
+    fn index(&self, pos: u32) -> &Self::Output {
+        return &self.sparse_sa[self.bitvector.rank(pos as usize)];
     }
 }
