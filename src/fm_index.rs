@@ -1,7 +1,6 @@
 use crate::bitvector::Bitvec;
 use crate::alphabet::{ Alphabet, AlphabetChar };
-use crate::suffix_array::SuffixArray;
-use crate::suffix_array::SparseSuffixArray;
+use crate::suffix_array::{ SuffixArray, SparseSuffixArray };
 
 /// FM index
 pub struct FMIndex<T: Alphabet> {
@@ -29,13 +28,17 @@ pub struct FMIndex<T: Alphabet> {
 
 impl<T: Alphabet> FMIndex<T> {
     pub fn new(text: &str, alphabet: T) -> Self {
+        let text_length = text.len();
+
         // Represent text as a vector
         let textVec = text.bytes().collect();
 
+        // Create the suffix array
+        let (_, suffix_array) = SuffixArray::new(text.as_bytes()).into_parts();
 
-
-        let bwt = "ACCAGT".bytes().collect();
-        let text_length = text.len();
+        // Create BWT from suffix array
+        let mut bwt: Vec<AlphabetChar> = vec![0; text_length + 1];
+        let dollar_pos = Self::bwt_from_sa(&suffix_array, &mut bwt, &textVec);
 
         // Initialize the counts table
         let mut counts = vec![0; alphabet.len()];
@@ -47,13 +50,27 @@ impl<T: Alphabet> FMIndex<T> {
 
         FMIndex {
             text: textVec,
-            bwt: bwt, // TODO
+            bwt: bwt,
             alphabet: alphabet,
             counts: counts,
-            dollar_pos: 0, // TODO
-            sparse_sa: SparseSuffixArray::from_sa(SuffixArray::new(&[1, 2, 3]), 1), // TODO
+            dollar_pos: dollar_pos,
+            sparse_sa: SparseSuffixArray::from_sa(&suffix_array, 1),
             occurence_table: occurence_table
         }
+    }
+
+    fn bwt_from_sa(sa: &Vec<u32>, bwt: &mut Vec<AlphabetChar>, text: &Vec<AlphabetChar>) -> usize {
+        let mut dollar_pos = 0;
+        for i in 0 .. sa.len() {
+            if sa[i] == 0 {
+                bwt[i] = b'$';
+                dollar_pos = i;
+            } else {
+                bwt[i] = text[sa[i] as usize - 1];
+            }
+        }
+
+        return dollar_pos;
     }
 
     fn initialize_counts(counts: &mut Vec<u32>, bwt: &Vec<AlphabetChar>, alphabet: &T) {

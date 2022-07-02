@@ -15,11 +15,9 @@ pub struct SparseSuffixArray {
 
 impl SparseSuffixArray {
     /// Construct the sparse suffix array from the entire suffix array
-    pub fn from_sa(suffix_array: SuffixArray, sparseness_factor: u32) -> Self {
-        let mut bitvector = Bitvec::new(suffix_array.len());
+    pub fn from_sa(sa: &Vec<u32>, sparseness_factor: u32) -> Self {
+        let mut bitvector = Bitvec::new(sa.len());
         let mut sparse_sa = Vec::new();
-
-        let (_, sa) = suffix_array.into_parts();
 
         for i in 0 .. sa.len() {
             if sa[i] % sparseness_factor == 0 {
