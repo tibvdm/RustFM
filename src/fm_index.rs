@@ -131,8 +131,12 @@ impl<T: Alphabet> FMIndex<T> {
 
 impl fmt::Debug for FMIndex<DNAAlphabet> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Text: {:?}\nBWT: {:?}\n", 
+        write!(f, "Text: {:?}\nBWT: {:?}\nDollar position: {}\nCounts table: {:?}\nOccurence table: {:?}",
             self.text.iter().map(|x| *x as char).collect::<Vec<char>>(), 
-            self.bwt.iter().map(|x| *x as char).collect::<Vec<char>>())
+            self.bwt.iter().map(|x| *x as char).collect::<Vec<char>>(),
+            self.dollar_pos,
+            self.counts,
+            self.occurence_table
+        )
     }
 }

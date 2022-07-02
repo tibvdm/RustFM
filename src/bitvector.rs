@@ -1,3 +1,5 @@
+use std::fmt;
+
 use std::ops::Index;
 use bitintr::Popcnt;
 
@@ -105,6 +107,16 @@ impl Index<usize> for Bitvec {
             return &true;
         }
         return &false;
+    }
+}
+
+impl fmt::Debug for Bitvec {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Ok(
+            for bv in self.bitvector.iter() {
+                write!(f, "{:064b}", bv)?
+            }
+        )
     }
 }
 
