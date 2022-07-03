@@ -7,7 +7,7 @@ use rust_fm::alphabet::{ Alphabet, DNAAlphabet, AlphabetChar };
 
 const AMOUNT_OF_INDICES: usize = 1_000_000;
 
-const SAMPLE_SIZE: usize    = 100;
+const SAMPLE_SIZE: usize    = 1_000;
 const MEASUREMENT_TIME: u64 = 20;
 
 fn generate_indices(n: usize, range: Range<usize>) -> Vec<usize> {
