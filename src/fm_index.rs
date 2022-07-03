@@ -92,11 +92,12 @@ impl<T: Alphabet> FMIndex<T> {
         for i in 0 .. alphabet.len() {
             let s2 = counts[i];
             counts[i] = s1;
-            s1 = s1 + s2; 
+            s1 += s2; 
         }
     }
 
     fn initialize_occurence_table(occurence_table: &mut Vec<Bitvec>, bwt: &Vec<AlphabetChar>, alphabet: &T, dollar_pos: usize) {
+        // TODO compare if to .filter()
         bwt.iter().enumerate().for_each(|(i, c)| {
             if i != dollar_pos {
                 occurence_table[alphabet.c2i(*c)].set(i, true);
