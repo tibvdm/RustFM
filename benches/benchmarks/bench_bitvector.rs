@@ -93,7 +93,7 @@ fn custom_criterion_config() -> Criterion {
 }
 
 criterion_group!(
-    name = benches_bitvector;
+    name = benches;
     config = custom_criterion_config();
     targets = bench_get, bench_index, bench_rank
 );
