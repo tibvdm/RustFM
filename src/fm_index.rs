@@ -16,7 +16,7 @@ pub struct FMIndex<T: Alphabet> {
     alphabet: T,
 
     /// Counts array
-    counts: Vec<u32>,
+    counts: Vec<usize>,
 
     /// Position of the lexicographic smallest item
     dollar_pos: usize,
@@ -75,7 +75,7 @@ impl<T: Alphabet> FMIndex<T> {
         return dollar_pos;
     }
 
-    fn initialize_counts(counts: &mut Vec<u32>, bwt: &Vec<AlphabetChar>, alphabet: &T) {
+    fn initialize_counts(counts: &mut Vec<usize>, bwt: &Vec<AlphabetChar>, alphabet: &T) {
         // Calculate counts
         for c in bwt {
             if *c == b'$' {
@@ -103,30 +103,30 @@ impl<T: Alphabet> FMIndex<T> {
         }
     }
 
-//    fn occ(&self, char_i: u32, i: u32) -> usize {
-//        if char_i == 0 {
-//            return if i > self.dollar_pos { 1 } else { 0 };
-//        }
-//
-//        return self.occurence_table[char_i - 1].rank(i);
-//    }
-//
-//    fn find_lf(&self, k: u32) -> u32 {
-//        // Fix this later (String -> &str)
-//        let i = self.alphabet.c2i(self.bwt.chars().nth(k).unwrap());
-//        return self.counts[i] + self.occ(i, k);
-//    }
-//
-//    fn find_sa(&self, k: u32) -> u32 {
-//        let mut i = k;
-//        let mut j = 0;
-//        while self.sparse_sa.contains(i) {
-//            i = self.find_lf(i);
-//            j += 1;
-//        }
-//
-//        return self.sparse_sa[i] + j;
-//    }
+    fn occ(&self, char_i: usize, i: usize) -> usize {
+        if char_i == 0 {
+            return if i > self.dollar_pos { 1 } else { 0 };
+        }
+
+        return self.occurence_table[char_i - 1].rank(i);
+    }
+
+    fn find_lf(&self, k: usize) -> usize {
+        // Fix this later (String -> &str)
+        let i = self.alphabet.c2i(self.bwt[k]);
+        return self.counts[i] + self.occ(i, k);
+    }
+
+    fn find_sa(&self, k: usize) -> u32 {
+        let mut i = k;
+        let mut j = 0;
+        while self.sparse_sa.contains(i as u32) {
+            i = self.find_lf(i);
+            j += 1;
+        }
+
+        return self.sparse_sa[i] + j;
+    }
 }
 
 impl fmt::Debug for FMIndex<DNAAlphabet> {

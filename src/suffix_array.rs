@@ -44,3 +44,11 @@ impl Index<u32> for SparseSuffixArray {
         return &self.sparse_sa[self.bitvector.rank(pos as usize)];
     }
 }
+
+impl Index<usize> for SparseSuffixArray {
+    type Output = u32;
+
+    fn index(&self, pos: usize) -> &Self::Output {
+        return &self.sparse_sa[self.bitvector.rank(pos)];
+    }
+}
