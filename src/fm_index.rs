@@ -45,11 +45,11 @@ impl<T: Alphabet> FMIndex<T> {
 
         // Initialize the counts table
         let mut counts = vec![0; alphabet.len()];
-        Self::initialize_counts(&mut counts, &bwt, &alphabet);
+        Self::initialize_counts(&mut counts, &bwt, &alphabet, dollar_pos);
 
         // initialize the occurence table
-        let mut occurence_table = vec![Bitvec::new(text_length + 1); alphabet.len() - 1];
-        Self::initialize_occurence_table(&mut occurence_table, &bwt, &alphabet);
+        let mut occurence_table = vec![Bitvec::new(text_length + 1); alphabet.len()];
+        Self::initialize_occurence_table(&mut occurence_table, &bwt, &alphabet, dollar_pos);
 
         FMIndex {
             text: text_vec,
@@ -64,9 +64,10 @@ impl<T: Alphabet> FMIndex<T> {
 
     fn bwt_from_sa(sa: &Vec<u32>, bwt: &mut Vec<AlphabetChar>, text: &Vec<AlphabetChar>) -> usize {
         let mut dollar_pos = 0;
+
         for i in 0 .. sa.len() {
             if sa[i] == 0 {
-                bwt[i] = b'$';
+                bwt[i] = b'A';
                 dollar_pos = i;
             } else {
                 bwt[i] = text[sa[i] as usize - 1];
@@ -76,37 +77,40 @@ impl<T: Alphabet> FMIndex<T> {
         return dollar_pos;
     }
 
-    fn initialize_counts(counts: &mut Vec<usize>, bwt: &Vec<AlphabetChar>, alphabet: &T) {
+    fn initialize_counts(counts: &mut Vec<usize>, bwt: &Vec<AlphabetChar>, alphabet: &T, dollar_pos: usize) {
         // Calculate counts
-        for c in bwt {
+        for (i, c) in bwt.iter().enumerate() {
+            if i == dollar_pos {
+                continue;
+            }
+
             counts[alphabet.c2i(*c)] += 1;
         }
 
         // Calculate the cumulative sum
-        for i in 1 .. alphabet.len() {
-            counts[i] += counts[i - 1];
+        let mut s1 = 1;
+        for i in 0 .. alphabet.len() {
+            let s2 = counts[i];
+            counts[i] = s1;
+            s1 = s1 + s2; 
         }
     }
 
-    fn initialize_occurence_table(occurence_table: &mut Vec<Bitvec>, bwt: &Vec<AlphabetChar>, alphabet: &T) {
+    fn initialize_occurence_table(occurence_table: &mut Vec<Bitvec>, bwt: &Vec<AlphabetChar>, alphabet: &T, dollar_pos: usize) {
         bwt.iter().enumerate().for_each(|(i, c)| {
-            if *c != b'$' {
-                occurence_table[alphabet.c2i(*c) - 1].set(i, true);
+            if i != dollar_pos {
+                occurence_table[alphabet.c2i(*c)].set(i, true);
             }
         });
 
         // Calculate the counts to allow efficient rank operations
-        for i in 0 .. alphabet.len() - 1 {
+        for i in 0 .. alphabet.len() {
             occurence_table[i].calculate_counts();
         }
     }
 
     fn occ(&self, char_i: usize, i: usize) -> usize {
-        if char_i == 0 {
-            return if i > self.dollar_pos { 1 } else { 0 };
-        }
-
-        return self.occurence_table[char_i - 1].rank(i);
+        return self.occurence_table[char_i].rank(i);
     }
 
     fn find_lf(&self, k: usize) -> usize {
@@ -126,26 +130,14 @@ impl<T: Alphabet> FMIndex<T> {
     }
 
     fn add_char_left(&self, char_i: usize, range: &mut Range<usize>) -> bool {
-        println!("Range (before): {:?}", range);
-        println!("Character ID: {:?}", char_i);
-        println!("Counts: {}", self.counts[char_i]);
-
-        println!("Occ start: {:?}", self.occ(char_i, range.start));
-        println!("Occ end: {:?}", self.occ(char_i, range.end));
-
-        range.start = self.counts[char_i - 1] + self.occ(char_i, range.start);
-        range.end   = self.counts[char_i - 1] + self.occ(char_i, range.end);
-
-        println!("Range (after): {:?}", range);
-        println!("=============================");
+        range.start = self.counts[char_i] + self.occ(char_i, range.start);
+        range.end   = self.counts[char_i] + self.occ(char_i, range.end);
 
         return !range.is_empty();
     }
 
     pub fn exact_match(&self, pattern: &Vec<AlphabetChar>) -> Vec<u32> {
         let mut result = vec![];
-
-        println!("{:?}", pattern);
         
         let mut range = 0 .. (self.text.len() + 1);
 

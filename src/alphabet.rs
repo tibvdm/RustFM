@@ -11,33 +11,31 @@ pub struct DNAAlphabet;
 
 impl Alphabet for DNAAlphabet {
     fn i2c(&self, i: usize) -> AlphabetChar {
-        assert!(i < 5, "The alphabet contains only 4 characters!");
+        assert!(i < 4, "The alphabet contains only 4 characters!");
         return match i {
-            0 => b'$',
-            1 => b'A',
-            2 => b'C',
-            3 => b'G',
+            0 => b'A',
+            1 => b'C',
+            2 => b'G',
             _ => b'T'
         }
     }
 
     fn c2i(&self, c: AlphabetChar) -> usize {
         let i = match c {
-            b'$' => 0,
-            b'A' => 1,
-            b'C' => 2,
-            b'G' => 3,
-            b'T' => 4,
-            _    => 5
+            b'A' => 0,
+            b'C' => 1,
+            b'G' => 2,
+            b'T' => 3,
+            _    => 4
         };
 
-        assert!(i < 5, "'{}' is not a part of the alphabet!", c);
+        assert!(i < 4, "'{}' is not a part of the alphabet!", c);
 
         return i;
     }
 
     fn len(&self) -> usize {
-        return 5;
+        return 4;
     }
 
     fn bits(&self) -> usize {
