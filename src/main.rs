@@ -8,5 +8,9 @@ fn main() -> Result<()> {
 
     println!("{:?}", fm_index);
 
+    //println!("{:?}", fm_index.exact_match(&"CGT".as_bytes().to_vec()));
+    //println!("{:?}", fm_index.exact_match(&"CCG".as_bytes().to_vec()));
+    println!("{:?}", fm_index.exact_match(&"C".as_bytes().to_vec()));
+
     Ok(())
 }
