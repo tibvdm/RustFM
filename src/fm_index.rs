@@ -1,4 +1,5 @@
 use std::fmt;
+use std::ops::Range;
 
 use crate::bitvector::Bitvec;
 use crate::alphabet::{ Alphabet, AlphabetChar, DNAAlphabet };
@@ -126,6 +127,31 @@ impl<T: Alphabet> FMIndex<T> {
         }
 
         return self.sparse_sa[i] + j;
+    }
+
+    fn add_char_left(&self, char_i: usize, range: &mut Range<usize>) -> bool {
+        range.start = self.counts[char_i] + self.occ(char_i, range.start);
+        range.end   = self.counts[char_i] + self.occ(char_i, range.end);
+
+        return !range.is_empty();
+    }
+
+    fn exact_match(&self, pattern: &Vec<AlphabetChar>) -> Vec<u32> {
+        let mut result = vec![];
+        
+        let mut range = 0 .. self.text.len();
+
+        for c in pattern.iter().rev() {
+            if !self.add_char_left(self.alphabet.c2i(*c), &mut range) {
+                return result;
+            }
+        }
+
+        for i in range {
+            result.push(self.find_sa(i));
+        }
+
+        return result;
     }
 }
 
