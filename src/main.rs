@@ -8,7 +8,7 @@ use rust_fm::alphabet::DNAAlphabet;
 fn main() -> Result<()> {
     env::set_var("RUST_BACKTRACE", "1");
 
-    let fm_index = FMIndex::new("ACCGTAAC", DNAAlphabet::default()); 
+    let fm_index = FMIndex::new("ACCGTAAC".bytes().collect(), DNAAlphabet::default()); 
 
     //println!("{:?}", fm_index);
 

@@ -30,18 +30,15 @@ pub struct FMIndex<T: Alphabet> {
 }
 
 impl<T: Alphabet> FMIndex<T> {
-    pub fn new(text: &str, alphabet: T) -> Self {
+    pub fn new(text: Vec<AlphabetChar>, alphabet: T) -> Self {
         let text_length = text.len();
 
-        // Represent text as a vector
-        let text_vec = text.bytes().collect();
-
         // Create the suffix array
-        let (_, suffix_array) = SuffixArray::new(text.as_bytes()).into_parts();
+        let (_, suffix_array) = SuffixArray::new(&text).into_parts();
 
         // Create BWT from suffix array
         let mut bwt: Vec<AlphabetChar> = vec![0; text_length + 1];
-        let dollar_pos = Self::bwt_from_sa(&suffix_array, &mut bwt, &text_vec);
+        let dollar_pos = Self::bwt_from_sa(&suffix_array, &mut bwt, &text);
 
         // Initialize the counts table
         let mut counts = vec![0; alphabet.len()];
@@ -52,7 +49,7 @@ impl<T: Alphabet> FMIndex<T> {
         Self::initialize_occurence_table(&mut occurence_table, &bwt, &alphabet, dollar_pos);
 
         FMIndex {
-            text: text_vec,
+            text: text,
             bwt: bwt,
             alphabet: alphabet,
             counts: counts,
