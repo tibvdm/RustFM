@@ -41,7 +41,7 @@ pub struct FMIndex<T: Alphabet> {
 }
 
 impl<T: Alphabet> FMIndex<T> {
-    pub fn new(text: Vec<AlphabetChar>, alphabet: T) -> Self {
+    pub fn new(text: Vec<AlphabetChar>, alphabet: T, sparseness_factor: u32) -> Self {
         let text_length = text.len();
 
         // Create the suffix array
@@ -65,7 +65,7 @@ impl<T: Alphabet> FMIndex<T> {
             alphabet:        alphabet,
             counts:          counts,
             dollar_pos:      dollar_pos,
-            sparse_sa:       SparseSuffixArray::from_sa(&suffix_array, 1),
+            sparse_sa:       SparseSuffixArray::from_sa(&suffix_array, sparseness_factor),
             occurence_table: occurence_table
         }
     }
@@ -214,28 +214,6 @@ mod tests {
         b'G', b'C', b'$', b'C', b'A', b'A', b'T', b'A', b'T', b'G', b'A', b'A', b'C', b'G', b'G',
         b'A', b'T', b'C', b'T', b'A', b'G'
     ];
-    const BWT_DOLLAR_POS: usize = 2;
-
-    const COUNTS: [usize; 4] = [1, 8, 12, 17];
-
-    const OCC_RESULTS: [[usize; 21]; 4] = [
-        [
-            0, 0, 0, 0, 0, 1, 2, 2, 3, 3, 3, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7
-        ],
-        [
-            0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4
-        ],
-        [
-            0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 4, 4, 4, 4, 4, 4
-        ],
-        [
-            0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4
-        ]
-    ];
-
-    const LF_RESULTS: [usize; 21] = [
-        12, 8, 0, 9, 1, 2, 17, 3, 18, 13, 4, 5, 10, 14, 15, 6, 19, 11, 20, 7, 16
-    ];
 
     #[test]
     fn test_bwt_from_sa() {
@@ -259,7 +237,9 @@ mod tests {
         let mut counts = vec![0; alphabet.len()];
         FMIndex::<DNAAlphabet>::initialize_counts(&mut counts, &BWT_VEC.to_vec(), &alphabet, 2);
 
-        assert_eq!(counts, COUNTS);
+        let counts_results: [usize; 4] = [1, 8, 12, 17];
+
+        assert_eq!(counts, counts_results);
     }
 
     #[test]
@@ -288,21 +268,116 @@ mod tests {
 
     #[test]
     fn test_occ() {
-        let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default());
+        let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default(), 1);
+
+        let occ_results: Vec<Vec<usize>> = vec![
+            vec![
+                0, 0, 0, 0, 0, 1, 2, 2, 3, 3, 3, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7,
+            ],
+            vec![
+                0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4,
+            ],
+            vec![
+                0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 4, 4, 4, 4, 4, 4,
+            ],
+            vec![
+                0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4,
+            ],
+        ];
 
         for i in 0 .. BWT_VEC.len() {
             for j in 0 .. DNAAlphabet::default().len() {
-                assert_eq!(fm_index.occ(j, i), OCC_RESULTS[j][i]);
+                assert_eq!(fm_index.occ(j, i), occ_results[j][i]);
             }
         }
     }
 
     #[test]
     fn test_find_lf() {
-        let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default());
+        let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default(), 1);
+
+        let lf_results: Vec<usize> = vec![
+            12, 8, 0, 9, 1, 2, 17, 3, 18, 13, 4, 5, 10, 14, 15, 6, 19, 11, 20, 7, 16,
+        ];
 
         for i in 0 .. BWT_VEC.len() {
-            assert_eq!(fm_index.find_lf(i), LF_RESULTS[i]);
+            assert_eq!(fm_index.find_lf(i), lf_results[i]);
         }
+    }
+
+    #[test]
+    fn test_find_sa() {
+        let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default(), 3);
+
+        let sa_results: Vec<u32> = vec![
+            20, 16, 0, 9, 17, 1, 4, 10, 15, 8, 18, 2, 19, 7, 6, 5, 12, 3, 14, 11, 13,
+        ];
+
+        for i in 0 .. BWT_VEC.len() {
+            assert_eq!(fm_index.find_sa(i), sa_results[i]);
+        }
+    }
+
+    #[test]
+    fn test_add_char_left() {
+        let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default(), 3);
+
+        // TODO
+    }
+
+    #[test]
+    fn test_exact_match() {
+        let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default(), 3);
+
+        // Define all test cases
+        let exact_match_single: Vec<Vec<AlphabetChar>> =
+            vec![vec![b'A'], vec![b'C'], vec![b'G'], vec![b'T']];
+        let exact_match_double: Vec<Vec<AlphabetChar>> =
+            vec![vec![b'A', b'A'], vec![b'A', b'C'], vec![b'A', b'G'], vec![
+                b'A', b'T',
+            ]];
+        let exact_match_start: Vec<AlphabetChar> = vec![b'A', b'A', b'C', b'T'];
+        let exact_match_end: Vec<AlphabetChar> = vec![b'A', b'A', b'C', b'G'];
+        let exact_match_not: Vec<AlphabetChar> = vec![b'C', b'C', b'C'];
+
+        // Define all test results
+        let exact_match_single_results: Vec<Vec<u32>> = vec![
+            vec![0, 1, 4, 9, 10, 16, 17],
+            vec![2, 8, 15, 18],
+            vec![5, 6, 7, 12, 19],
+            vec![3, 11, 13, 14],
+        ];
+        let exact_match_double_results: Vec<Vec<u32>> =
+            vec![vec![0, 9, 16], vec![1, 17], vec![4], vec![10]];
+        let exact_match_start_results: Vec<u32> = vec![0];
+        let exact_match_end_results: Vec<u32> = vec![16];
+        let exact_match_not_results: Vec<u32> = vec![];
+
+        for i in 0 .. exact_match_single.len() {
+            let mut result = fm_index.exact_match(&exact_match_single[i]);
+            result.sort();
+
+            assert_eq!(result, exact_match_single_results[i]);
+        }
+
+        for i in 0 .. exact_match_double.len() {
+            let mut result = fm_index.exact_match(&exact_match_double[i]);
+            result.sort();
+
+            assert_eq!(result, exact_match_double_results[i]);
+        }
+
+        assert_eq!(
+            fm_index.exact_match(&exact_match_start),
+            exact_match_start_results
+        );
+        assert_eq!(
+            fm_index.exact_match(&exact_match_end),
+            exact_match_end_results
+        );
+        assert_eq!(
+            fm_index.exact_match(&exact_match_not),
+            exact_match_not_results
+        );
     }
 }

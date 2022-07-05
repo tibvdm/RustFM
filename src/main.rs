@@ -9,7 +9,7 @@ use rust_fm::{
 fn main() -> Result<()> {
     env::set_var("RUST_BACKTRACE", "1");
 
-    let fm_index = FMIndex::new("ACCGTAAC".bytes().collect(), DNAAlphabet::default());
+    let fm_index = FMIndex::new("ACCGTAAC".bytes().collect(), DNAAlphabet::default(), 1);
 
     //println!("{:?}", fm_index);
 
