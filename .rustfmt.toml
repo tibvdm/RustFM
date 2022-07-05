@@ -1,0 +1,11 @@
+comment_width: 100
+imports_layout: vertical
+imports_granularity: crate
+overflow_delimited_expr: true
+reorder_impl_items: true
+group_imports: StdExternalCrate
+spaces_around_ranges: true
+struct_field_align_threshold: 20
+struct_lit_single_line: false
+trailing_comma: never
+wrap_comments: true
