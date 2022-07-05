@@ -1,6 +1,8 @@
-use std::fmt;
+use std::{
+    fmt,
+    ops::Index
+};
 
-use std::ops::Index;
 use bitintr::Popcnt;
 
 const ULL1: u64 = 1;
@@ -22,8 +24,12 @@ impl Bitvec {
     /// Create a new bitvector
     pub fn new(n: usize) -> Self {
         let bitvector = vec![0; (n + 63) / 64];
-        let counts    = vec![0; (n + 7)  / 4 ];
-        Bitvec { n, bitvector, counts }
+        let counts = vec![0; (n + 7) / 4];
+        Bitvec {
+            n,
+            bitvector,
+            counts
+        }
     }
 
     /// Index the bitvector by calculating the count levels
@@ -38,7 +44,7 @@ impl Bitvec {
                 self.counts[q] = level1_counts;
 
                 // Reset level2 counts
-                level2_counts  = self.bitvector[w].popcnt() as usize;
+                level2_counts = self.bitvector[w].popcnt() as usize;
 
                 // Update interleaving count
                 q += 2
@@ -52,7 +58,7 @@ impl Bitvec {
     /// Check if a bit is set at a given position
     pub fn get(&self, pos: usize) -> bool {
         let word: usize = pos / 64;
-        let bit:  usize = pos % 64;
+        let bit: usize = pos % 64;
         return (self.bitvector[word] & (ULL1 << bit)) != 0;
     }
 
@@ -60,7 +66,7 @@ impl Bitvec {
     pub fn set(&mut self, pos: usize, value: bool) {
         let w: usize = pos / 64;
         let b: usize = pos % 64;
-        
+
         if value {
             self.bitvector[w] |= ULL1 << b;
         } else {
@@ -83,7 +89,7 @@ impl Bitvec {
     /// Get the level 2 counts
     pub fn level2_counts(&self, w: usize) -> usize {
         // Interleaved position in counts table
-        let q = (w / 8) * 2; 
+        let q = (w / 8) * 2;
         let t: i64 = (w % 8) as i64 - 1;
         return self.counts[q + 1] >> (t + (t >> 60 & 8)) * 9 & 0x1FF;
     }
@@ -112,10 +118,8 @@ impl Index<usize> for Bitvec {
 
 impl fmt::Debug for Bitvec {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        Ok(
-            for bv in self.bitvector.iter() {
-                write!(f, "{:064b}", bv)?
-            }
-        )
+        Ok(for bv in self.bitvector.iter() {
+            write!(f, "{:064b}", bv)?
+        })
     }
 }

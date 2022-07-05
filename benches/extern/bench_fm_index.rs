@@ -1,17 +1,31 @@
-use std::ops::Range;
-use std::time::Duration;
-use criterion::{ criterion_group, Criterion, BatchSize };
-use rand::distributions::{ Distribution, Uniform };
+use std::{
+    ops::Range,
+    time::Duration
+};
 
-use rust_fm::alphabet::{ DNAAlphabet, AlphabetChar };
-
-use fm_index::converter::RangeConverter;
-use fm_index::suffix_array::SuffixOrderSampler;
-use fm_index::{BackwardSearchIndex, FMIndex};
+use criterion::{
+    criterion_group,
+    BatchSize,
+    Criterion
+};
+use fm_index::{
+    converter::RangeConverter,
+    suffix_array::SuffixOrderSampler,
+    BackwardSearchIndex,
+    FMIndex
+};
+use rand::distributions::{
+    Distribution,
+    Uniform
+};
+use rust_fm::alphabet::{
+    AlphabetChar,
+    DNAAlphabet
+};
 
 const AMOUNT_OF_CHARACTERS: usize = 10_000_000;
 
-const SAMPLE_SIZE: usize    = 1_000;
+const SAMPLE_SIZE: usize = 1_000;
 const MEASUREMENT_TIME: u64 = 20;
 
 fn generate_indices(n: usize, range: Range<usize>) -> Vec<usize> {
@@ -23,7 +37,10 @@ fn generate_indices(n: usize, range: Range<usize>) -> Vec<usize> {
 }
 
 fn generate_characters(n: usize, characters: Vec<AlphabetChar>) -> Vec<AlphabetChar> {
-    return generate_indices(n, 0 .. characters.len()).iter().map(|i| characters[*i]).collect();
+    return generate_indices(n, 0 .. characters.len())
+        .iter()
+        .map(|i| characters[*i])
+        .collect();
 }
 
 //fn bench_new(c: &mut Criterion) {
@@ -42,16 +59,21 @@ fn bench_exact_match(c: &mut Criterion) {
 
     let sampler = SuffixOrderSampler::new().level(2);
 
-    let fm_index = FMIndex::new(generate_characters(AMOUNT_OF_CHARACTERS, vec![b'A', b'C', b'G', b'T']), converter, sampler);
+    let fm_index = FMIndex::new(
+        generate_characters(AMOUNT_OF_CHARACTERS, vec![b'A', b'C', b'G', b'T']),
+        converter,
+        sampler
+    );
 
-    c.bench_function("bench_exact_match",
-        |b| b.iter_batched_ref(
+    c.bench_function("bench_exact_match", |b| {
+        b.iter_batched_ref(
             // Create a new string of characters
             || generate_characters(100, vec![b'A', b'C', b'G', b'T']),
             // Create a new fm index
-            |pattern| fm_index.search_backward(pattern)
-        , BatchSize::SmallInput)
-    );
+            |pattern| fm_index.search_backward(pattern),
+            BatchSize::SmallInput
+        )
+    });
 }
 
 // TODO: https://bheisler.github.io/criterion.rs/book/user_guide/advanced_configuration.html

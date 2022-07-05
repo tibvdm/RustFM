@@ -1,9 +1,13 @@
 #[cfg(test)]
 mod tests {
-    use crate::alphabet::{ Alphabet, AlphabetChar, DNAAlphabet };
+    use crate::alphabet::{
+        Alphabet,
+        AlphabetChar,
+        DNAAlphabet
+    };
 
     const DNA_CHARACTERS: [AlphabetChar; 4] = [b'A', b'C', b'G', b'T'];
-    const DNA_INDICES:    [usize       ; 4] = [0,    1,    2,    3   ];
+    const DNA_INDICES: [usize; 4] = [0, 1, 2, 3];
 
     #[test]
     fn test_dna_alphabet_c2i() {

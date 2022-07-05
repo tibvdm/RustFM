@@ -17,7 +17,7 @@ impl Alphabet for DNAAlphabet {
             1 => b'C',
             2 => b'G',
             _ => b'T'
-        }
+        };
     }
 
     fn c2i(&self, c: AlphabetChar) -> usize {
@@ -26,7 +26,7 @@ impl Alphabet for DNAAlphabet {
             b'C' => 1,
             b'G' => 2,
             b'T' => 3,
-            _    => 4
+            _ => 4
         };
 
         assert!(i < 4, "'{}' is not a part of the alphabet!", c);
@@ -50,7 +50,7 @@ impl Default for DNAAlphabet {
 }
 
 // pub struct ProteinAlphabet;
-// 
+//
 // impl Alphabet for ProteinAlphabet {
-// 
+//
 // }

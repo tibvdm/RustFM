@@ -1,8 +1,8 @@
 use std::ops::Index;
 
-use crate::bitvector::Bitvec;
-
 pub use suffix_array::SuffixArray;
+
+use crate::bitvector::Bitvec;
 
 /// Sparse suffix array for FM indices
 pub struct SparseSuffixArray {
@@ -28,7 +28,10 @@ impl SparseSuffixArray {
 
         bitvector.calculate_counts();
 
-        SparseSuffixArray { bitvector, sparse_sa }
+        SparseSuffixArray {
+            bitvector,
+            sparse_sa
+        }
     }
 
     /// Check whether the sparse suffix array contains the value at a position

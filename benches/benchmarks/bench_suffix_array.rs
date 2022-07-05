@@ -1,14 +1,28 @@
-use std::ops::Range;
-use std::time::Duration;
-use criterion::{ criterion_group, Criterion, BatchSize };
-use rand::distributions::{ Distribution, Uniform };
+use std::{
+    ops::Range,
+    time::Duration
+};
 
-use rust_fm::alphabet::AlphabetChar;
-use rust_fm::suffix_array::{ SuffixArray, SparseSuffixArray };
+use criterion::{
+    criterion_group,
+    BatchSize,
+    Criterion
+};
+use rand::distributions::{
+    Distribution,
+    Uniform
+};
+use rust_fm::{
+    alphabet::AlphabetChar,
+    suffix_array::{
+        SparseSuffixArray,
+        SuffixArray
+    }
+};
 
 const AMOUNT_OF_INDICES: usize = 1_000_000;
 
-const SAMPLE_SIZE: usize    = 100;
+const SAMPLE_SIZE: usize = 100;
 const MEASUREMENT_TIME: u64 = 20;
 
 fn generate_indices(n: usize, range: Range<usize>) -> Vec<usize> {
@@ -20,7 +34,10 @@ fn generate_indices(n: usize, range: Range<usize>) -> Vec<usize> {
 }
 
 fn generate_characters(n: usize, characters: Vec<AlphabetChar>) -> Vec<AlphabetChar> {
-    return generate_indices(n, 0 .. characters.len()).iter().map(|i| characters[*i]).collect();
+    return generate_indices(n, 0 .. characters.len())
+        .iter()
+        .map(|i| characters[*i])
+        .collect();
 }
 
 fn generate_suffix_array(n: usize, characters: Vec<AlphabetChar>) -> Vec<u32> {
@@ -30,16 +47,17 @@ fn generate_suffix_array(n: usize, characters: Vec<AlphabetChar>) -> Vec<u32> {
 }
 
 fn bench_from_sa(c: &mut Criterion) {
-    c.bench_function("bench_from_sa",
-        |b| b.iter_batched_ref(
+    c.bench_function("bench_from_sa", |b| {
+        b.iter_batched_ref(
             // Create a new list of indices to map
-            || generate_suffix_array(AMOUNT_OF_INDICES, vec![b'A', b'C', b'G', b'T']), 
+            || generate_suffix_array(AMOUNT_OF_INDICES, vec![b'A', b'C', b'G', b'T']),
             // Run the benchmark for those indices
             |suffix_array| {
                 SparseSuffixArray::from_sa(suffix_array, 32);
-            }
-        , BatchSize::SmallInput)
-    );
+            },
+            BatchSize::SmallInput
+        )
+    });
 }
 
 // TODO: https://bheisler.github.io/criterion.rs/book/user_guide/advanced_configuration.html
