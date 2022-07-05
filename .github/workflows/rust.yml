@@ -41,6 +41,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
+          profile: minimal-nightly
           toolchain: nightly
           override: true
       - uses: actions-rs/cargo@v1
@@ -54,7 +55,7 @@ jobs:
       - uses: actions-rs/grcov@v0.1
       - uses: codecov/codecov-action@v3
         with:
-          files: ${{ steps.coverage.outputs.report }}
+          directory: ${{ steps.coverage.outputs.report }}
           
   fmt:
     name: Cargo fmt
@@ -63,7 +64,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          profile: minimal
+          profile: minimal-nightly
           toolchain: nightly
           override: false
           components: rustfmt
