@@ -7,7 +7,7 @@ use bitintr::Popcnt;
 
 const ULL1: u64 = 1;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 /// Bitvector with Jacobson’s rank
 pub struct Bitvec {
     /// Size of the bitvector

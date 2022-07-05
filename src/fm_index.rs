@@ -187,3 +187,88 @@ impl fmt::Debug for FMIndex<DNAAlphabet> {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        alphabet::{
+            Alphabet,
+            AlphabetChar,
+            DNAAlphabet
+        },
+        bitvector::Bitvec,
+        fm_index::FMIndex,
+        suffix_array::SuffixArray
+    };
+
+    const INPUT_VEC: [AlphabetChar; 20] = [
+        b'A', b'A', b'C', b'T', b'A', b'G', b'G', b'G', b'C', b'A', b'A', b'T', b'G', b'T', b'T',
+        b'C', b'A', b'A', b'C', b'G'
+    ];
+
+    const BWT_VEC: [AlphabetChar; 21] = [
+        b'G', b'C', b'$', b'C', b'A', b'A', b'T', b'A', b'T', b'G', b'A', b'A', b'C', b'G', b'G',
+        b'A', b'T', b'C', b'T', b'A', b'G'
+    ];
+    const BWT_DOLLAR_POS: usize = 2;
+
+    const COUNTS: [usize; 4] = [1, 8, 12, 17];
+
+    #[test]
+    fn test_bwt_from_sa() {
+        let suffix_array = SuffixArray::new(&INPUT_VEC.to_vec()).into_parts().1;
+
+        let mut bwt: Vec<AlphabetChar> = vec![0; 21];
+        let dollar_pos =
+            FMIndex::<DNAAlphabet>::bwt_from_sa(&suffix_array, &mut bwt, &INPUT_VEC.to_vec());
+
+        assert_eq!(bwt[0 .. dollar_pos], BWT_VEC.to_vec()[0 .. dollar_pos]);
+        assert_eq!(
+            bwt[dollar_pos + 1 .. 21],
+            BWT_VEC.to_vec()[dollar_pos + 1 .. 21]
+        );
+    }
+
+    #[test]
+    fn test_initialize_counts() {
+        let alphabet = DNAAlphabet::default();
+
+        let mut counts = vec![0; alphabet.len()];
+        FMIndex::<DNAAlphabet>::initialize_counts(&mut counts, &BWT_VEC.to_vec(), &alphabet, 2);
+
+        assert_eq!(counts, COUNTS);
+    }
+
+    #[test]
+    fn test_initialize_occurence_table() {
+        let alphabet = DNAAlphabet::default();
+
+        let mut occurence_table = vec![Bitvec::new(21); alphabet.len()];
+        FMIndex::<DNAAlphabet>::initialize_occurence_table(
+            &mut occurence_table,
+            &BWT_VEC.to_vec(),
+            &alphabet,
+            2
+        );
+
+        let mut result = vec![Bitvec::new(21); alphabet.len()];
+        for i in 0 .. BWT_VEC.len() {
+            if i == 2 {
+                continue;
+            }
+
+            result[alphabet.c2i(BWT_VEC[i])].set(i, true);
+        }
+
+        assert_eq!(occurence_table, result);
+    }
+
+    //#[test]
+    //fn test_occ() {
+    //    let fm_index = FMIndex::new(INPUT_VEC, DNAAlphabet::default());
+    //
+    //    // BWT: GC$CAATATGAACGGATCTAG
+    //
+    //    assert_eq!(fm_index.occ())
+    //}
+}
