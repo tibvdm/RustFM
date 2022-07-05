@@ -214,6 +214,21 @@ mod tests {
 
     const COUNTS: [usize; 4] = [1, 8, 12, 17];
 
+    const OCC_RESULTS: [[usize; 21]; 4] = [
+        [
+            0, 0, 0, 0, 0, 1, 2, 2, 3, 3, 3, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7
+        ],
+        [
+            0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4
+        ],
+        [
+            0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 4, 4, 4, 4, 4, 4
+        ],
+        [
+            0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4
+        ]
+    ];
+
     #[test]
     fn test_bwt_from_sa() {
         let suffix_array = SuffixArray::new(&INPUT_VEC.to_vec()).into_parts().1;
@@ -263,12 +278,14 @@ mod tests {
         assert_eq!(occurence_table, result);
     }
 
-    //#[test]
-    //fn test_occ() {
-    //    let fm_index = FMIndex::new(INPUT_VEC, DNAAlphabet::default());
-    //
-    //    // BWT: GC$CAATATGAACGGATCTAG
-    //
-    //    assert_eq!(fm_index.occ())
-    //}
+    #[test]
+    fn test_occ() {
+        let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default());
+
+        for i in 0 .. BWT_VEC.len() {
+            for j in 0 .. DNAAlphabet::default().len() {
+                assert_eq!(fm_index.occ(j, i), OCC_RESULTS[j][i]);
+            }
+        }
+    }
 }
