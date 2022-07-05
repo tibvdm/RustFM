@@ -52,10 +52,12 @@ jobs:
           CARGO_INCREMENTAL: '0'
           RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
           RUSTDOCFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
-      - uses: actions-rs/grcov@v0.1
-      - uses: codecov/codecov-action@v3
+      - id: cov
+        uses: actions-rs/grcov@v0.1
+      - name: Codecov upload
+        uses: codecov/codecov-action@v3
         with:
-          directory: ${{ steps.coverage.outputs.report }}
+          directory: ${{ steps.cov.outputs.report }}
           verbose: true
           
   fmt:
