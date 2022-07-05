@@ -57,7 +57,7 @@ jobs:
       - name: Codecov upload
         uses: codecov/codecov-action@v3
         with:
-          directory: ${{ steps.cov.outputs.report }}
+          files: ${{ steps.cov.outputs.report }}
           verbose: true
           
   fmt:
