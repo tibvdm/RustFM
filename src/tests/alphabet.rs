@@ -13,7 +13,7 @@ mod tests {
     fn test_dna_alphabet_c2i() {
         let alphabet = DNAAlphabet::default();
 
-        for i in 0..DNA_CHARACTERS.len() {
+        for i in 0 .. DNA_CHARACTERS.len() {
             assert_eq!(alphabet.c2i(DNA_CHARACTERS[i]), DNA_INDICES[i]);
         }
     }
