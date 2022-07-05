@@ -7,10 +7,10 @@ pub use suffix_array::SuffixArray;
 /// Sparse suffix array for FM indices
 pub struct SparseSuffixArray {
     /// Control vector to keep track of stored values
-    bitvector: Bitvec,
+    pub bitvector: Bitvec,
 
     /// The sparse suffix array
-    sparse_sa: Vec<u32>
+    pub sparse_sa: Vec<u32>
 }
 
 impl SparseSuffixArray {

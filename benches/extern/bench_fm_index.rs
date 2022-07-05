@@ -1,11 +1,13 @@
-use std::str;
 use std::ops::Range;
 use std::time::Duration;
 use criterion::{ criterion_group, Criterion, BatchSize };
 use rand::distributions::{ Distribution, Uniform };
 
-use rust_fm::fm_index::FMIndex;
 use rust_fm::alphabet::{ DNAAlphabet, AlphabetChar };
+
+use fm_index::converter::RangeConverter;
+use fm_index::suffix_array::SuffixOrderSampler;
+use fm_index::{BackwardSearchIndex, FMIndex};
 
 const AMOUNT_OF_CHARACTERS: usize = 10_000_000;
 
@@ -24,30 +26,30 @@ fn generate_characters(n: usize, characters: Vec<AlphabetChar>) -> Vec<AlphabetC
     return generate_indices(n, 0 .. characters.len()).iter().map(|i| characters[*i]).collect();
 }
 
-fn generate_fm_index(n: usize, characters: Vec<AlphabetChar>) -> FMIndex<DNAAlphabet> {
-    return FMIndex::new(generate_characters(n, characters), DNAAlphabet::default());
-}
-
-fn bench_new(c: &mut Criterion) {
-    c.bench_function("bench_new",
-        |b| b.iter_batched(
-            // Create a new string of characters
-            || generate_characters(AMOUNT_OF_CHARACTERS, vec![b'A', b'C', b'G', b'T']),
-            // Create a new fm index
-            |characters| FMIndex::new(characters, DNAAlphabet::default())
-        , BatchSize::SmallInput)
-    );
-}
+//fn bench_new(c: &mut Criterion) {
+//    c.bench_function("bench_new",
+//        |b| b.iter_batched(
+//            // Create a new string of characters
+//            || generate_characters(AMOUNT_OF_CHARACTERS, vec![b'A', b'C', b'G', b'T']),
+//            // Create a new fm index
+//            |characters| FMIndex::new(characters, DNAAlphabet::default())
+//        , BatchSize::SmallInput)
+//    );
+//}
 
 fn bench_exact_match(c: &mut Criterion) {
-    let fm_index = generate_fm_index(AMOUNT_OF_CHARACTERS, vec![b'A', b'C', b'G', b'T']);
+    let converter = RangeConverter::new(b'A', b'T');
+
+    let sampler = SuffixOrderSampler::new().level(2);
+
+    let fm_index = FMIndex::new(generate_characters(AMOUNT_OF_CHARACTERS, vec![b'A', b'C', b'G', b'T']), converter, sampler);
 
     c.bench_function("bench_exact_match",
         |b| b.iter_batched_ref(
             // Create a new string of characters
             || generate_characters(100, vec![b'A', b'C', b'G', b'T']),
             // Create a new fm index
-            |pattern| fm_index.exact_match(pattern)
+            |pattern| fm_index.search_backward(pattern)
         , BatchSize::SmallInput)
     );
 }

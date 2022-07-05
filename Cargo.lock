@@ -241,6 +241,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "fid"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a44ef301a177937a9b78bb15d8faca11a858ede49ba28ff93eaaa687d4233556"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "fm-index"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9fc3f84043364aec4e26fca1db7729981ab717419b11eeb11d22212fd6eb927"
+dependencies = [
+ "fid",
+ "num-traits",
+ "serde",
+]
+
+[[package]]
 name = "getrandom"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -521,6 +541,7 @@ dependencies = [
  "bitintr",
  "criterion",
  "error-chain",
+ "fm-index",
  "rand",
  "suffix_array",
 ]
@@ -581,6 +602,9 @@ name = "serde"
 version = "1.0.138"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1578c6245786b9d168c5447eeacfb96856573ca56c9d68fdcf394be134882a47"
+dependencies = [
+ "serde_derive",
+]
 
 [[package]]
 name = "serde_cbor"
