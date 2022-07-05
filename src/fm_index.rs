@@ -133,6 +133,10 @@ impl<T: Alphabet> FMIndex<T> {
     }
 
     fn find_lf(&self, k: usize) -> usize {
+        if k == self.dollar_pos {
+            return 0;
+        }
+
         let i = self.alphabet.c2i(self.bwt[k]);
         return self.counts[i] + self.occ(i, k);
     }
@@ -229,6 +233,10 @@ mod tests {
         ]
     ];
 
+    const LF_RESULTS: [usize; 21] = [
+        12, 8, 0, 9, 1, 2, 17, 3, 18, 13, 4, 5, 10, 14, 15, 6, 19, 11, 20, 7, 16
+    ];
+
     #[test]
     fn test_bwt_from_sa() {
         let suffix_array = SuffixArray::new(&INPUT_VEC.to_vec()).into_parts().1;
@@ -286,6 +294,15 @@ mod tests {
             for j in 0 .. DNAAlphabet::default().len() {
                 assert_eq!(fm_index.occ(j, i), OCC_RESULTS[j][i]);
             }
+        }
+    }
+
+    #[test]
+    fn test_find_lf() {
+        let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default());
+
+        for i in 0 .. BWT_VEC.len() {
+            assert_eq!(fm_index.find_lf(i), LF_RESULTS[i]);
         }
     }
 }
