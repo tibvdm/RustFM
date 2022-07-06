@@ -306,13 +306,6 @@ mod tests {
     }
 
     #[test]
-    fn test_add_char_left() {
-        let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default(), 3);
-
-        // TODO
-    }
-
-    #[test]
     fn test_exact_match() {
         let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default(), 3);
 
