@@ -23,7 +23,7 @@ pub struct FMIndex<T: Alphabet> {
     text: Vec<AlphabetIndex>,
 
     /// Burrows Wheeler Transform of the original text
-    bwt: Vec<AlphabetChar>,
+    bwt: Vec<AlphabetIndex>,
 
     /// The used alphabet
     alphabet: T,
@@ -77,7 +77,11 @@ impl<T: Alphabet> FMIndex<T> {
         }
     }
 
-    fn bwt_from_sa(sa: &Vec<u32>, bwt: &mut Vec<AlphabetChar>, text: &Vec<AlphabetIndex>) -> usize {
+    fn bwt_from_sa(
+        sa: &Vec<u32>,
+        bwt: &mut Vec<AlphabetIndex>,
+        text: &Vec<AlphabetIndex>
+    ) -> usize {
         let mut dollar_pos = 0;
 
         for i in 0 .. sa.len() {
@@ -94,7 +98,7 @@ impl<T: Alphabet> FMIndex<T> {
 
     fn initialize_counts(
         counts: &mut Vec<usize>,
-        bwt: &Vec<AlphabetChar>,
+        bwt: &Vec<AlphabetIndex>,
         alphabet: &T,
         dollar_pos: usize
     ) {
@@ -118,7 +122,7 @@ impl<T: Alphabet> FMIndex<T> {
 
     fn initialize_occurence_table(
         occurence_table: &mut Vec<Bitvec>,
-        bwt: &Vec<AlphabetChar>,
+        bwt: &Vec<AlphabetIndex>,
         alphabet: &T,
         dollar_pos: usize
     ) {
@@ -183,6 +187,10 @@ impl<T: Alphabet> FMIndex<T> {
 
         return result;
     }
+
+    //pub fn approximate_match(&self, patter: &Vec<AlphabetChar>, k: usize) -> Vec<u32> {
+    //
+    //}
 }
 
 impl fmt::Debug for FMIndex<DNAAlphabet> {

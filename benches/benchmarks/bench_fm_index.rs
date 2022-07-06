@@ -21,6 +21,7 @@ use rust_fm::{
 };
 
 const AMOUNT_OF_CHARACTERS: usize = 1_000_000;
+const PATTERN_SIZE: usize = 100;
 
 const SAMPLE_SIZE: usize = 100;
 const MEASUREMENT_TIME: u64 = 20;
@@ -62,7 +63,7 @@ fn bench_exact_match(c: &mut Criterion) {
     c.bench_function("bench_exact_match", |b| {
         b.iter_batched_ref(
             // Create a new string of characters
-            || generate_characters(100, vec![b'A', b'C', b'G', b'T']),
+            || generate_characters(PATTERN_SIZE, vec![b'A', b'C', b'G', b'T']),
             // Create a new fm index
             |pattern| fm_index.exact_match(pattern),
             BatchSize::SmallInput
@@ -81,5 +82,5 @@ fn custom_criterion_config() -> Criterion {
 criterion_group!(
     name = benches;
     config = custom_criterion_config();
-    targets = bench_new, bench_exact_match
+    targets = /*bench_new,*/ bench_exact_match
 );
