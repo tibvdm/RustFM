@@ -7,6 +7,7 @@ use crate::{
     alphabet::{
         Alphabet,
         AlphabetChar,
+        AlphabetIndex,
         DNAAlphabet
     },
     bitvector::Bitvec,
@@ -19,7 +20,7 @@ use crate::{
 /// FM index
 pub struct FMIndex<T: Alphabet> {
     /// The original text
-    text: Vec<AlphabetChar>,
+    text: Vec<AlphabetIndex>,
 
     /// Burrows Wheeler Transform of the original text
     bwt: Vec<AlphabetChar>,
@@ -44,12 +45,18 @@ impl<T: Alphabet> FMIndex<T> {
     pub fn new(text: Vec<AlphabetChar>, alphabet: T, sparseness_factor: u32) -> Self {
         let text_length = text.len();
 
+        // Translate each character to its index
+        let translated_text: Vec<AlphabetIndex> = text
+            .iter()
+            .map(|c| alphabet.c2i(*c))
+            .collect::<Vec<AlphabetIndex>>();
+
         // Create the suffix array
-        let (_, suffix_array) = SuffixArray::new(&text).into_parts();
+        let suffix_array = SuffixArray::new(&translated_text).into_parts().1;
 
         // Create BWT from suffix array
         let mut bwt: Vec<AlphabetChar> = vec![0; text_length + 1];
-        let dollar_pos = Self::bwt_from_sa(&suffix_array, &mut bwt, &text);
+        let dollar_pos = Self::bwt_from_sa(&suffix_array, &mut bwt, &translated_text);
 
         // Initialize the counts table
         let mut counts = vec![0; alphabet.len()];
@@ -60,7 +67,7 @@ impl<T: Alphabet> FMIndex<T> {
         Self::initialize_occurence_table(&mut occurence_table, &bwt, &alphabet, dollar_pos);
 
         FMIndex {
-            text:            text,
+            text:            translated_text,
             bwt:             bwt,
             alphabet:        alphabet,
             counts:          counts,
@@ -70,12 +77,12 @@ impl<T: Alphabet> FMIndex<T> {
         }
     }
 
-    fn bwt_from_sa(sa: &Vec<u32>, bwt: &mut Vec<AlphabetChar>, text: &Vec<AlphabetChar>) -> usize {
+    fn bwt_from_sa(sa: &Vec<u32>, bwt: &mut Vec<AlphabetChar>, text: &Vec<AlphabetIndex>) -> usize {
         let mut dollar_pos = 0;
 
         for i in 0 .. sa.len() {
             if sa[i] == 0 {
-                bwt[i] = b'A';
+                bwt[i] = 0;
                 dollar_pos = i;
             } else {
                 bwt[i] = text[sa[i] as usize - 1];
@@ -92,12 +99,12 @@ impl<T: Alphabet> FMIndex<T> {
         dollar_pos: usize
     ) {
         // Calculate counts
-        for (i, c) in bwt.iter().enumerate() {
+        for (i, char_i) in bwt.iter().enumerate() {
             if i == dollar_pos {
                 continue;
             }
 
-            counts[alphabet.c2i(*c)] += 1;
+            counts[(*char_i) as usize] += 1;
         }
 
         // Calculate the cumulative sum
@@ -116,9 +123,9 @@ impl<T: Alphabet> FMIndex<T> {
         dollar_pos: usize
     ) {
         // TODO compare if to .filter()
-        bwt.iter().enumerate().for_each(|(i, c)| {
+        bwt.iter().enumerate().for_each(|(i, char_i)| {
             if i != dollar_pos {
-                occurence_table[alphabet.c2i(*c)].set(i, true);
+                occurence_table[(*char_i) as usize].set(i, true);
             }
         });
 
@@ -137,8 +144,8 @@ impl<T: Alphabet> FMIndex<T> {
             return 0;
         }
 
-        let i = self.alphabet.c2i(self.bwt[k]);
-        return self.counts[i] + self.occ(i, k);
+        let char_i = self.bwt[k] as usize;
+        return self.counts[char_i] + self.occ(char_i, k);
     }
 
     fn find_sa(&self, k: usize) -> u32 {
@@ -165,7 +172,7 @@ impl<T: Alphabet> FMIndex<T> {
         let mut range = 0 .. (self.text.len() + 1);
 
         for c in pattern.iter().rev() {
-            if !self.add_char_left(self.alphabet.c2i(*c), &mut range) {
+            if !self.add_char_left(self.alphabet.c2i(*c) as usize, &mut range) {
                 return result;
             }
         }
@@ -198,6 +205,7 @@ mod tests {
         alphabet::{
             Alphabet,
             AlphabetChar,
+            AlphabetIndex,
             DNAAlphabet
         },
         bitvector::Bitvec,
@@ -211,28 +219,49 @@ mod tests {
     ];
 
     const BWT_VEC: [AlphabetChar; 21] = [
-        b'G', b'C', b'$', b'C', b'A', b'A', b'T', b'A', b'T', b'G', b'A', b'A', b'C', b'G', b'G',
+        b'G', b'C', b'A', b'C', b'A', b'A', b'T', b'A', b'T', b'G', b'A', b'A', b'C', b'G', b'G',
         b'A', b'T', b'C', b'T', b'A', b'G'
     ];
+    const BWT_DOLLAR_POS: usize = 2;
 
     #[test]
     fn test_bwt_from_sa() {
+        let alphabet = DNAAlphabet::default();
+
+        let translated_input_vec = INPUT_VEC
+            .iter()
+            .map(|c| alphabet.c2i(*c))
+            .collect::<Vec<AlphabetIndex>>();
+        let translated_bwt_vec = BWT_VEC
+            .iter()
+            .map(|c| alphabet.c2i(*c))
+            .collect::<Vec<AlphabetIndex>>();
+
         let suffix_array = SuffixArray::new(&INPUT_VEC.to_vec()).into_parts().1;
 
         let mut bwt: Vec<AlphabetChar> = vec![0; 21];
-        let dollar_pos =
-            FMIndex::<DNAAlphabet>::bwt_from_sa(&suffix_array, &mut bwt, &INPUT_VEC.to_vec());
+        FMIndex::<DNAAlphabet>::bwt_from_sa(&suffix_array, &mut bwt, &translated_input_vec);
 
-        assert_eq!(bwt[0 .. dollar_pos], BWT_VEC.to_vec()[0 .. dollar_pos]);
-        assert_eq!(bwt[dollar_pos + 1 .. 21], BWT_VEC.to_vec()[dollar_pos + 1 .. 21]);
+        assert_eq!(bwt[0 .. BWT_DOLLAR_POS], translated_bwt_vec[0 .. BWT_DOLLAR_POS]);
+        assert_eq!(bwt[BWT_DOLLAR_POS + 1 .. 21], translated_bwt_vec[BWT_DOLLAR_POS + 1 .. 21]);
     }
 
     #[test]
     fn test_initialize_counts() {
         let alphabet = DNAAlphabet::default();
 
+        let translated_bwt_vec = BWT_VEC
+            .iter()
+            .map(|c| alphabet.c2i(*c))
+            .collect::<Vec<AlphabetIndex>>();
+
         let mut counts = vec![0; alphabet.len()];
-        FMIndex::<DNAAlphabet>::initialize_counts(&mut counts, &BWT_VEC.to_vec(), &alphabet, 2);
+        FMIndex::<DNAAlphabet>::initialize_counts(
+            &mut counts,
+            &translated_bwt_vec,
+            &alphabet,
+            BWT_DOLLAR_POS
+        );
 
         let counts_results: [usize; 4] = [1, 8, 12, 17];
 
@@ -243,21 +272,26 @@ mod tests {
     fn test_initialize_occurence_table() {
         let alphabet = DNAAlphabet::default();
 
+        let translated_bwt_vec = BWT_VEC
+            .iter()
+            .map(|c| alphabet.c2i(*c))
+            .collect::<Vec<AlphabetIndex>>();
+
         let mut occurence_table = vec![Bitvec::new(21); alphabet.len()];
         FMIndex::<DNAAlphabet>::initialize_occurence_table(
             &mut occurence_table,
-            &BWT_VEC.to_vec(),
+            &translated_bwt_vec,
             &alphabet,
-            2
+            BWT_DOLLAR_POS
         );
 
         let mut result = vec![Bitvec::new(21); alphabet.len()];
         for i in 0 .. BWT_VEC.len() {
-            if i == 2 {
+            if i == BWT_DOLLAR_POS {
                 continue;
             }
 
-            result[alphabet.c2i(BWT_VEC[i])].set(i, true);
+            result[translated_bwt_vec[i] as usize].set(i, true);
         }
 
         assert_eq!(occurence_table, result);

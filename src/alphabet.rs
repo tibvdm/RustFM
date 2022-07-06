@@ -1,8 +1,9 @@
 pub type AlphabetChar = u8;
+pub type AlphabetIndex = u8;
 
 pub trait Alphabet {
-    fn i2c(&self, i: usize) -> AlphabetChar;
-    fn c2i(&self, c: AlphabetChar) -> usize;
+    fn i2c(&self, i: AlphabetIndex) -> AlphabetChar;
+    fn c2i(&self, c: AlphabetChar) -> AlphabetIndex;
     fn len(&self) -> usize;
     fn bits(&self) -> usize;
 }
@@ -10,7 +11,7 @@ pub trait Alphabet {
 pub struct DNAAlphabet;
 
 impl Alphabet for DNAAlphabet {
-    fn i2c(&self, i: usize) -> AlphabetChar {
+    fn i2c(&self, i: AlphabetIndex) -> AlphabetChar {
         assert!(i < 4, "The alphabet contains only 4 characters!");
         return match i {
             0 => b'A',
@@ -20,7 +21,7 @@ impl Alphabet for DNAAlphabet {
         };
     }
 
-    fn c2i(&self, c: AlphabetChar) -> usize {
+    fn c2i(&self, c: AlphabetChar) -> AlphabetIndex {
         let i = match c {
             b'A' => 0,
             b'C' => 1,
@@ -60,11 +61,12 @@ mod tests {
     use crate::alphabet::{
         Alphabet,
         AlphabetChar,
+        AlphabetIndex,
         DNAAlphabet
     };
 
     const DNA_CHARACTERS: [AlphabetChar; 4] = [b'A', b'C', b'G', b'T'];
-    const DNA_INDICES: [usize; 4] = [0, 1, 2, 3];
+    const DNA_INDICES: [AlphabetIndex; 4] = [0, 1, 2, 3];
 
     #[test]
     fn test_dna_alphabet_c2i() {

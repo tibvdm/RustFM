@@ -15,6 +15,7 @@ use rand::distributions::{
 use rust_fm::alphabet::{
     Alphabet,
     AlphabetChar,
+    AlphabetIndex,
     DNAAlphabet
 };
 
@@ -23,18 +24,18 @@ const AMOUNT_OF_INDICES: usize = 1_000_000;
 const SAMPLE_SIZE: usize = 1_000;
 const MEASUREMENT_TIME: u64 = 20;
 
-fn generate_indices(n: usize, range: Range<usize>) -> Vec<usize> {
+fn generate_indices(n: usize, range: Range<AlphabetIndex>) -> Vec<AlphabetIndex> {
     let mut rng = rand::thread_rng();
 
-    let distribution = Uniform::<usize>::from(range);
+    let distribution = Uniform::<AlphabetIndex>::from(range);
 
     return (0 .. n).map(|_| distribution.sample(&mut rng)).collect();
 }
 
 fn generate_characters(n: usize, characters: Vec<AlphabetChar>) -> Vec<AlphabetChar> {
-    return generate_indices(n, 0 .. characters.len())
+    return generate_indices(n, 0 .. characters.len() as u8)
         .iter()
-        .map(|i| characters[*i])
+        .map(|i| characters[(*i) as usize])
         .collect();
 }
 
@@ -44,7 +45,7 @@ fn bench_alphabet_dna_i2c(c: &mut Criterion) {
     c.bench_function("bench_alphabet_dna_i2c", |b| {
         b.iter_batched(
             // Create a new list of indices to map
-            || generate_indices(AMOUNT_OF_INDICES, 0 .. alphabet.len()),
+            || generate_indices(AMOUNT_OF_INDICES, 0 .. alphabet.len() as u8),
             // Run the benchmark for those indices
             |indices| {
                 for i in indices {
