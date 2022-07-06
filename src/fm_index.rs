@@ -224,10 +224,7 @@ mod tests {
             FMIndex::<DNAAlphabet>::bwt_from_sa(&suffix_array, &mut bwt, &INPUT_VEC.to_vec());
 
         assert_eq!(bwt[0 .. dollar_pos], BWT_VEC.to_vec()[0 .. dollar_pos]);
-        assert_eq!(
-            bwt[dollar_pos + 1 .. 21],
-            BWT_VEC.to_vec()[dollar_pos + 1 .. 21]
-        );
+        assert_eq!(bwt[dollar_pos + 1 .. 21], BWT_VEC.to_vec()[dollar_pos + 1 .. 21]);
     }
 
     #[test]
@@ -271,18 +268,10 @@ mod tests {
         let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default(), 1);
 
         let occ_results: Vec<Vec<usize>> = vec![
-            vec![
-                0, 0, 0, 0, 0, 1, 2, 2, 3, 3, 3, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7,
-            ],
-            vec![
-                0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4,
-            ],
-            vec![
-                0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 4, 4, 4, 4, 4, 4,
-            ],
-            vec![
-                0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4,
-            ],
+            vec![0, 0, 0, 0, 0, 1, 2, 2, 3, 3, 3, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7],
+            vec![0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4],
+            vec![0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 4, 4, 4, 4, 4, 4],
+            vec![0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4],
         ];
 
         for i in 0 .. BWT_VEC.len() {
@@ -296,9 +285,8 @@ mod tests {
     fn test_find_lf() {
         let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default(), 1);
 
-        let lf_results: Vec<usize> = vec![
-            12, 8, 0, 9, 1, 2, 17, 3, 18, 13, 4, 5, 10, 14, 15, 6, 19, 11, 20, 7, 16,
-        ];
+        let lf_results: Vec<usize> =
+            vec![12, 8, 0, 9, 1, 2, 17, 3, 18, 13, 4, 5, 10, 14, 15, 6, 19, 11, 20, 7, 16];
 
         for i in 0 .. BWT_VEC.len() {
             assert_eq!(fm_index.find_lf(i), lf_results[i]);
@@ -309,9 +297,8 @@ mod tests {
     fn test_find_sa() {
         let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default(), 3);
 
-        let sa_results: Vec<u32> = vec![
-            20, 16, 0, 9, 17, 1, 4, 10, 15, 8, 18, 2, 19, 7, 6, 5, 12, 3, 14, 11, 13,
-        ];
+        let sa_results: Vec<u32> =
+            vec![20, 16, 0, 9, 17, 1, 4, 10, 15, 8, 18, 2, 19, 7, 6, 5, 12, 3, 14, 11, 13];
 
         for i in 0 .. BWT_VEC.len() {
             assert_eq!(fm_index.find_sa(i), sa_results[i]);
@@ -333,9 +320,7 @@ mod tests {
         let exact_match_single: Vec<Vec<AlphabetChar>> =
             vec![vec![b'A'], vec![b'C'], vec![b'G'], vec![b'T']];
         let exact_match_double: Vec<Vec<AlphabetChar>> =
-            vec![vec![b'A', b'A'], vec![b'A', b'C'], vec![b'A', b'G'], vec![
-                b'A', b'T',
-            ]];
+            vec![vec![b'A', b'A'], vec![b'A', b'C'], vec![b'A', b'G'], vec![b'A', b'T']];
         let exact_match_start: Vec<AlphabetChar> = vec![b'A', b'A', b'C', b'T'];
         let exact_match_end: Vec<AlphabetChar> = vec![b'A', b'A', b'C', b'G'];
         let exact_match_not: Vec<AlphabetChar> = vec![b'C', b'C', b'C'];
@@ -367,17 +352,8 @@ mod tests {
             assert_eq!(result, exact_match_double_results[i]);
         }
 
-        assert_eq!(
-            fm_index.exact_match(&exact_match_start),
-            exact_match_start_results
-        );
-        assert_eq!(
-            fm_index.exact_match(&exact_match_end),
-            exact_match_end_results
-        );
-        assert_eq!(
-            fm_index.exact_match(&exact_match_not),
-            exact_match_not_results
-        );
+        assert_eq!(fm_index.exact_match(&exact_match_start), exact_match_start_results);
+        assert_eq!(fm_index.exact_match(&exact_match_end), exact_match_end_results);
+        assert_eq!(fm_index.exact_match(&exact_match_not), exact_match_not_results);
     }
 }

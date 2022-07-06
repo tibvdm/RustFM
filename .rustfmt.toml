@@ -1,7 +1,9 @@
+array_width = 90
 comment_width = 100
 imports_layout = "vertical"
 imports_granularity = "crate"
-overflow_delimited_expr = true
+fn_call_width = 90
+overflow_delimited_expr = false
 reorder_impl_items = true
 group_imports = "StdExternalCrate"
 spaces_around_ranges = true
