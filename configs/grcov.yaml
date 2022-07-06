@@ -1,0 +1,3 @@
+ignore:
+  - "main.rs"
+  - "lib.rs"
