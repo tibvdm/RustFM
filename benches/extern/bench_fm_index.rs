@@ -18,10 +18,7 @@ use rand::distributions::{
     Distribution,
     Uniform
 };
-use rust_fm::alphabet::{
-    AlphabetChar,
-    DNAAlphabet
-};
+use rust_fm::alphabet::AlphabetChar;
 
 const AMOUNT_OF_CHARACTERS: usize = 10_000_000;
 

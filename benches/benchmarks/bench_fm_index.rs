@@ -21,9 +21,9 @@ use rust_fm::{
     fm_index::FMIndex
 };
 
-const AMOUNT_OF_CHARACTERS: usize = 10_000_000;
+const AMOUNT_OF_CHARACTERS: usize = 1_000_000;
 
-const SAMPLE_SIZE: usize = 1_000;
+const SAMPLE_SIZE: usize = 100;
 const MEASUREMENT_TIME: u64 = 20;
 
 fn generate_indices(n: usize, range: Range<usize>) -> Vec<usize> {
@@ -42,7 +42,7 @@ fn generate_characters(n: usize, characters: Vec<AlphabetChar>) -> Vec<AlphabetC
 }
 
 fn generate_fm_index(n: usize, characters: Vec<AlphabetChar>) -> FMIndex<DNAAlphabet> {
-    return FMIndex::new(generate_characters(n, characters), DNAAlphabet::default());
+    return FMIndex::new(generate_characters(n, characters), DNAAlphabet::default(), 1);
 }
 
 fn bench_new(c: &mut Criterion) {
@@ -51,7 +51,7 @@ fn bench_new(c: &mut Criterion) {
             // Create a new string of characters
             || generate_characters(AMOUNT_OF_CHARACTERS, vec![b'A', b'C', b'G', b'T']),
             // Create a new fm index
-            |characters| FMIndex::new(characters, DNAAlphabet::default()),
+            |characters| FMIndex::new(characters, DNAAlphabet::default(), 1),
             BatchSize::SmallInput
         )
     });
@@ -82,5 +82,5 @@ fn custom_criterion_config() -> Criterion {
 criterion_group!(
     name = benches;
     config = custom_criterion_config();
-    targets = /*bench_new,*/ bench_exact_match
+    targets = bench_new, bench_exact_match
 );
