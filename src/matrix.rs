@@ -96,7 +96,12 @@ impl BandedMatrix {
         return self[[row, column]];
     }
 
-    fn update_row(&mut self, pattern: &Vec<AlphabetIndex>, row: usize, c: AlphabetIndex) -> usize {
+    pub fn update_row(
+        &mut self,
+        pattern: &Vec<AlphabetIndex>,
+        row: usize,
+        c: AlphabetIndex
+    ) -> usize {
         let mut minimum = usize::MAX;
 
         for i in self.first_column(row) ..= self.last_column(row) {
@@ -109,11 +114,11 @@ impl BandedMatrix {
         return minimum;
     }
 
-    fn in_final_column(&self, row: usize) -> bool {
+    pub fn in_final_column(&self, row: usize) -> bool {
         return self.last_column(row) == self.m - 1;
     }
 
-    fn final_column(&self, row: usize) -> usize {
+    pub fn final_column(&self, row: usize) -> usize {
         return self[[row, self.m - 1]];
     }
 }

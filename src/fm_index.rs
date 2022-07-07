@@ -1,7 +1,4 @@
-use std::{
-    fmt,
-    ops::Range
-};
+use std::fmt;
 
 use crate::{
     alphabet::{
@@ -11,14 +8,20 @@ use crate::{
         DNAAlphabet
     },
     bitvector::Bitvec,
+    matrix::BandedMatrix,
+    range::Range,
     suffix_array::{
         SparseSuffixArray,
         SuffixArray
+    },
+    tree::{
+        Position,
+        SearchTree
     }
 };
 
 /// FM index
-pub struct FMIndex<T: Alphabet> {
+pub struct FMIndex<A: Alphabet> {
     /// The original text
     text: Vec<AlphabetIndex>,
 
@@ -26,7 +29,7 @@ pub struct FMIndex<T: Alphabet> {
     bwt: Vec<AlphabetIndex>,
 
     /// The used alphabet
-    alphabet: T,
+    alphabet: A,
 
     /// Counts array
     counts: Vec<usize>,
@@ -41,8 +44,8 @@ pub struct FMIndex<T: Alphabet> {
     occurence_table: Vec<Bitvec>
 }
 
-impl<T: Alphabet> FMIndex<T> {
-    pub fn new(text: Vec<AlphabetChar>, alphabet: T, sparseness_factor: u32) -> Self {
+impl<A: Alphabet> FMIndex<A> {
+    pub fn new(text: Vec<AlphabetChar>, alphabet: A, sparseness_factor: u32) -> Self {
         let text_length = text.len();
 
         // Translate each character to its index
@@ -99,7 +102,7 @@ impl<T: Alphabet> FMIndex<T> {
     fn initialize_counts(
         counts: &mut Vec<usize>,
         bwt: &Vec<AlphabetIndex>,
-        alphabet: &T,
+        alphabet: &A,
         dollar_pos: usize
     ) {
         // Calculate counts
@@ -123,7 +126,7 @@ impl<T: Alphabet> FMIndex<T> {
     fn initialize_occurence_table(
         occurence_table: &mut Vec<Bitvec>,
         bwt: &Vec<AlphabetIndex>,
-        alphabet: &T,
+        alphabet: &A,
         dollar_pos: usize
     ) {
         // TODO compare if to .filter()
@@ -163,34 +166,74 @@ impl<T: Alphabet> FMIndex<T> {
         return self.sparse_sa[i] + j;
     }
 
-    fn add_char_left(&self, char_i: usize, range: &mut Range<usize>) -> bool {
-        range.start = self.counts[char_i] + self.occ(char_i, range.start);
-        range.end = self.counts[char_i] + self.occ(char_i, range.end);
+    pub fn alphabet(&self) -> &A {
+        return &self.alphabet;
+    }
 
-        return !range.is_empty();
+    pub fn add_char_left(
+        &self,
+        char_i: usize,
+        range: &Range<usize>,
+        new_range: &mut Range<usize>
+    ) -> bool {
+        new_range.start = self.counts[char_i] + self.occ(char_i, range.start);
+        new_range.end = self.counts[char_i] + self.occ(char_i, range.end);
+
+        return !new_range.empty();
     }
 
     pub fn exact_match(&self, pattern: &Vec<AlphabetChar>) -> Vec<u32> {
         let mut result = vec![];
 
-        let mut range = 0 .. (self.text.len() + 1);
+        let mut range = Range::new(0, self.text.len() + 1);
 
         for c in pattern.iter().rev() {
-            if !self.add_char_left(self.alphabet.c2i(*c) as usize, &mut range) {
+            if !self.add_char_left(self.alphabet.c2i(*c) as usize, &range.clone(), &mut range) {
                 return result;
             }
         }
 
-        for i in range {
+        for i in range.start .. range.end {
             result.push(self.find_sa(i));
         }
 
         return result;
     }
 
-    //pub fn approximate_match(&self, patter: &Vec<AlphabetChar>, k: usize) -> Vec<u32> {
-    //
-    //}
+    pub fn approximate_match(&self, pattern: &Vec<AlphabetChar>, k: usize) -> Vec<Position> {
+        let mut occurences: Vec<Position> = vec![];
+
+        let reversed_pattern = pattern
+            .iter()
+            .rev()
+            .map(|c| self.alphabet.c2i(*c))
+            .collect::<Vec<AlphabetIndex>>();
+
+        let mut matrix = BandedMatrix::new(pattern.len(), k);
+
+        let mut search_tree = SearchTree::new(self);
+
+        search_tree.extend_search_space(&Range::new(0, self.text.len()), 0);
+
+        while let Some(item) = search_tree.next() {
+            let min_edit_distance =
+                matrix.update_row(&reversed_pattern, item.row(), item.character());
+
+            if min_edit_distance < k {
+                search_tree.extend_search_space(item.range(), item.row());
+            }
+
+            if matrix.in_final_column(item.row()) {
+                let value = matrix.final_column(item.row());
+
+                if value <= k {
+                    occurences.push(item);
+                }
+            }
+        }
+
+        return occurences;
+    }
 }
 
 impl fmt::Debug for FMIndex<DNAAlphabet> {
