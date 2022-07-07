@@ -232,6 +232,7 @@ impl<A: Alphabet> FMIndex<A> {
             }
         }
 
+        // TODO: test and filter redundant matches
         return occurences;
     }
 }
