@@ -3,6 +3,7 @@ use std::{
         max,
         min
     },
+    fmt,
     ops::{
         Index,
         IndexMut
@@ -134,6 +135,39 @@ impl Index<[usize; 2]> for BandedMatrix {
 impl IndexMut<[usize; 2]> for BandedMatrix {
     fn index_mut(&mut self, pos: [usize; 2]) -> &mut Self::Output {
         &mut self.matrix[pos[0] * self.columns_per_row + pos[1] - pos[0] + self.b]
+    }
+}
+
+impl fmt::Debug for BandedMatrix {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Ok(for i in 0 .. self.n {
+            let first_column = self.first_column(i);
+            let last_column = self.last_column(i);
+
+            let mut row: String = "row: ".to_owned();
+
+            let mut start_column = 0;
+
+            if first_column == 1 && i <= self.b {
+                row += format!("{} ", self[[i, 0]]).as_str();
+                //row += " ";
+                start_column += 1;
+            }
+
+            for _ in start_column .. first_column {
+                row += "  ";
+            }
+
+            for j in first_column ..= last_column {
+                row += format!("{} ", self[[i, j]]).as_str();
+            }
+
+            for _ in last_column + 1 .. self.m {
+                row += "  ";
+            }
+
+            writeln!(f, "{}", row)?
+        })
     }
 }
 

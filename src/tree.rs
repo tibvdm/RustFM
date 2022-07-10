@@ -1,13 +1,15 @@
+use std::fmt;
+
 use crate::{
     alphabet::{
         Alphabet,
-        AlphabetIndex
+        AlphabetIndex,
+        DNAAlphabet
     },
     fm_index::FMIndex,
     range::Range
 };
 
-#[derive(Debug)]
 pub struct Position {
     /// Range over the suffix array
     range: Range<usize>,
@@ -47,12 +49,25 @@ impl PartialEq for Position {
     }
 }
 
+impl fmt::Debug for Position {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // TODO: do not hardcode alphabet
+        write!(
+            f,
+            "range: {:?}, depth: {}, char: {}",
+            self.range,
+            self.depth,
+            DNAAlphabet::default().i2c(self.index) as char
+        )
+    }
+}
+
 pub struct SearchTree<'a, A: Alphabet> {
     /// The fm index over which we span the tree
     fm_index: &'a FMIndex<A>,
 
     /// The search space
-    search_space: Vec<Position>
+    pub search_space: Vec<Position> // TODO: remove pub
 }
 
 impl<'a, A: Alphabet> SearchTree<'a, A> {
@@ -69,6 +84,7 @@ impl<'a, A: Alphabet> SearchTree<'a, A> {
         let mut range_copy = *range;
         for i in 0 .. self.fm_index.alphabet().len() {
             if self.fm_index.add_char_left(i, range, &mut range_copy) {
+                println!("{:?} --> {:?}", range, range_copy);
                 self.search_space
                     .push(Position::new(range_copy, depth + 1, i as AlphabetIndex));
             }

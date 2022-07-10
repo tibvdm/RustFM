@@ -57,6 +57,8 @@ impl<A: Alphabet> FMIndex<A> {
         // Create the suffix array
         let suffix_array = SuffixArray::new(&translated_text).into_parts().1;
 
+        println!("{:?}", suffix_array);
+
         // Create BWT from suffix array
         let mut bwt: Vec<AlphabetChar> = vec![0; text_length + 1];
         let dollar_pos = Self::bwt_from_sa(&suffix_array, &mut bwt, &translated_text);
@@ -68,6 +70,8 @@ impl<A: Alphabet> FMIndex<A> {
         // initialize the occurence table
         let mut occurence_table = vec![Bitvec::new(text_length + 1); alphabet.len()];
         Self::initialize_occurence_table(&mut occurence_table, &bwt, &alphabet, dollar_pos);
+
+        println!("{:?}", occurence_table);
 
         FMIndex {
             text:            translated_text,
@@ -203,17 +207,21 @@ impl<A: Alphabet> FMIndex<A> {
     pub fn approximate_match(&self, pattern: &Vec<AlphabetChar>, k: usize) -> Vec<Position> {
         let mut occurences: Vec<Position> = vec![];
 
+        // TODO: create pattern struct to avoid this reverse step
         let reversed_pattern = pattern
             .iter()
             .rev()
             .map(|c| self.alphabet.c2i(*c))
             .collect::<Vec<AlphabetIndex>>();
 
+        println!("Pattern: {:?}", pattern);
+        println!("Reversed pattern: {:?}", reversed_pattern);
+
         let mut matrix = BandedMatrix::new(pattern.len(), k);
 
         let mut search_tree = SearchTree::new(self);
 
-        search_tree.extend_search_space(&Range::new(0, self.text.len()), 0);
+        search_tree.extend_search_space(&Range::new(0, self.text.len() + 1), 0);
 
         while let Some(item) = search_tree.next() {
             let min_edit_distance =
@@ -225,6 +233,8 @@ impl<A: Alphabet> FMIndex<A> {
 
             if matrix.in_final_column(item.row()) {
                 let value = matrix.final_column(item.row());
+
+                println!("VALUE: {:?}", value);
 
                 if value <= k {
                     occurences.push(item);
@@ -435,4 +445,22 @@ mod tests {
         assert_eq!(fm_index.exact_match(&exact_match_end), exact_match_end_results);
         assert_eq!(fm_index.exact_match(&exact_match_not), exact_match_not_results);
     }
+
+    //    #[test]
+    //    fn test_approximate_match() {
+    //        let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default(), 3);
+    //
+    //        let pattern: Vec<AlphabetChar> = vec![b'C', b'T', b'A', b'G', b'G', b'T'];
+    //
+    //        let res = fm_index.approximate_match(&pattern, 1);
+    //
+    //        println!("{:?}", res);
+    //
+    //        assert_eq!(true, false);
+    //    }
+
+    // const INPUT_VEC: [AlphabetChar; 20] = [
+    //     b'A', b'A', b'C', b'T', b'A', b'G', b'G', b'G', b'C', b'A', b'A', b'T', b'G', b'T', b'T',
+    //     b'C', b'A', b'A', b'C', b'G'
+    // ];
 }
