@@ -5,6 +5,11 @@ use std::{
 
 use bitintr::Popcnt;
 
+use crate::alphabet::{
+    Alphabet,
+    AlphabetIndex
+};
+
 const ULL1: u64 = 1;
 
 #[derive(Clone, PartialEq)]
@@ -81,13 +86,18 @@ impl Bitvec {
         return l1c + l2c + self.level3_counts(pos / 64, pos % 64);
     }
 
+    /// Get the length of the bitvector
+    pub fn len(&self) -> usize {
+        return self.n;
+    }
+
     /// Get the level 1 counts
-    pub fn level1_counts(&self, w: usize) -> usize {
+    fn level1_counts(&self, w: usize) -> usize {
         return self.counts[(w / 8) * 2];
     }
 
     /// Get the level 2 counts
-    pub fn level2_counts(&self, w: usize) -> usize {
+    fn level2_counts(&self, w: usize) -> usize {
         // Interleaved position in counts table
         let q = (w / 8) * 2;
         let t: i64 = (w % 8) as i64 - 1;
@@ -95,13 +105,8 @@ impl Bitvec {
     }
 
     /// Get the level 3 counts
-    pub fn level3_counts(&self, w: usize, b: usize) -> usize {
+    fn level3_counts(&self, w: usize, b: usize) -> usize {
         return ((self.bitvector[w] << 1) << (63 - b)).popcnt() as usize;
-    }
-
-    /// Get the length of the bitvector
-    pub fn len(&self) -> usize {
-        return self.n;
     }
 }
 
@@ -124,11 +129,72 @@ impl fmt::Debug for Bitvec {
     }
 }
 
+pub struct OccurenceTable {
+    // TODO: make array? because 2D vec now?
+    table: Vec<Bitvec>,
+
+    /// Position of the sentinel character
+    sentinel: usize
+}
+
+impl OccurenceTable {
+    pub fn from_bwt(bwt: &Vec<AlphabetIndex>, sentinel: usize, alphabet: &dyn Alphabet) -> Self {
+        let mut table = vec![Bitvec::new(bwt.len()); alphabet.len()];
+
+        // TODO compare if to .filter()
+        bwt.iter().enumerate().for_each(|(i, char_i)| {
+            if i != sentinel {
+                for j in (*char_i) as usize .. alphabet.len() {
+                    table[j].set(i, true);
+                }
+            }
+        });
+
+        // Calculate the counts to allow efficient rank operations
+        for i in 0 .. alphabet.len() {
+            table[i].calculate_counts();
+        }
+
+        Self {
+            table,
+            sentinel
+        }
+    }
+
+    pub fn occ(&self, char_i: usize, i: usize) -> usize {
+        if char_i == 0 {
+            return self.table[char_i].rank(i);
+        }
+        return self.table[char_i].rank(i) - self.table[char_i - 1].rank(i);
+    }
+
+    pub fn cumulative_occ(&self, char_i: usize, i: usize) -> usize {
+        if char_i == 0 {
+            return (self.sentinel < i) as usize;
+        }
+        return self.table[char_i - 1].rank(i) + (self.sentinel < i) as usize;
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::bitvector::Bitvec;
+    use crate::{
+        alphabet::{
+            Alphabet,
+            AlphabetIndex,
+            DNAAlphabet
+        },
+        bitvector::{
+            Bitvec,
+            OccurenceTable
+        }
+    };
 
     const BITVEC_SIZE: usize = 10_000;
+
+    const BWT_INDEX_VEC: [AlphabetIndex; 21] =
+        [2, 1, 0, 1, 0, 0, 3, 0, 3, 2, 0, 0, 1, 2, 2, 0, 3, 1, 3, 0, 2];
+    const SENTINEL_POS: usize = 2;
 
     #[test]
     fn test_index_operator_empty() {
@@ -168,6 +234,71 @@ mod tests {
 
         for i in 1025 .. BITVEC_SIZE {
             assert_eq!(bitvector.rank(i), 1024);
+        }
+    }
+
+    #[test]
+    fn test_initialize_occurence_table() {
+        let alphabet = DNAAlphabet::default();
+
+        let mut occurence_table =
+            OccurenceTable::from_bwt(&BWT_INDEX_VEC.to_vec(), SENTINEL_POS, &alphabet);
+
+        let mut result = vec![Bitvec::new(21); alphabet.len()];
+        for i in 0 .. BWT_INDEX_VEC.len() {
+            if i == SENTINEL_POS {
+                continue;
+            }
+
+            for j in BWT_INDEX_VEC[i] as usize .. alphabet.len() {
+                result[j].set(i, true);
+            }
+        }
+
+        assert_eq!(occurence_table.table, result);
+    }
+
+    #[test]
+    fn test_occ() {
+        let occurence_table = OccurenceTable::from_bwt(
+            &BWT_INDEX_VEC.to_vec(),
+            SENTINEL_POS,
+            &DNAAlphabet::default()
+        );
+
+        let occ_results: Vec<Vec<usize>> = vec![
+            vec![0, 0, 0, 0, 0, 1, 2, 2, 3, 3, 3, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7],
+            vec![0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4],
+            vec![0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 4, 4, 4, 4, 4, 4],
+            vec![0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4],
+        ];
+
+        for i in 0 .. BWT_INDEX_VEC.len() {
+            for j in 0 .. DNAAlphabet::default().len() {
+                assert_eq!(occurence_table.occ(j, i), occ_results[j][i]);
+            }
+        }
+    }
+
+    #[test]
+    fn test_cumulative_occ() {
+        let occurence_table = OccurenceTable::from_bwt(
+            &BWT_INDEX_VEC.to_vec(),
+            SENTINEL_POS,
+            &DNAAlphabet::default()
+        );
+
+        let occ_results: Vec<Vec<usize>> = vec![
+            vec![0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            vec![0, 0, 0, 1, 1, 2, 3, 3, 4, 4, 4, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8],
+            vec![0, 0, 1, 2, 3, 4, 5, 5, 6, 6, 6, 7, 8, 9, 9, 9, 10, 10, 11, 11, 12],
+            vec![0, 1, 2, 3, 4, 5, 6, 6, 7, 7, 8, 9, 10, 11, 12, 13, 14, 14, 15, 15, 16],
+        ];
+
+        for i in 0 .. BWT_INDEX_VEC.len() {
+            for j in 0 .. DNAAlphabet::default().len() {
+                assert_eq!(occurence_table.cumulative_occ(j, i), occ_results[j][i]);
+            }
         }
     }
 }

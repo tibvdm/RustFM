@@ -6,7 +6,7 @@ use crate::{
         AlphabetIndex,
         DNAAlphabet
     },
-    fm_index::FMIndex,
+    index::fm_index::FMIndex,
     range::Range
 };
 

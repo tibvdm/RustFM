@@ -7,7 +7,7 @@ use crate::{
         AlphabetIndex,
         DNAAlphabet
     },
-    bitvector::Bitvec,
+    bitvector::OccurenceTable,
     matrix::BandedMatrix,
     range::Range,
     suffix_array::{
@@ -35,13 +35,13 @@ pub struct FMIndex<A: Alphabet> {
     counts: Vec<usize>,
 
     /// Position of the lexicographic smallest item
-    dollar_pos: usize,
+    sentinel: usize,
 
     /// The sparse suffix array
     sparse_sa: SparseSuffixArray,
 
     /// occurence table
-    occurence_table: Vec<Bitvec>
+    occurence_table: OccurenceTable
 }
 
 impl<A: Alphabet> FMIndex<A> {
@@ -57,28 +57,23 @@ impl<A: Alphabet> FMIndex<A> {
         // Create the suffix array
         let suffix_array = SuffixArray::new(&translated_text).into_parts().1;
 
-        println!("{:?}", suffix_array);
-
         // Create BWT from suffix array
         let mut bwt: Vec<AlphabetChar> = vec![0; text_length + 1];
-        let dollar_pos = Self::bwt_from_sa(&suffix_array, &mut bwt, &translated_text);
+        let sentinel = Self::bwt_from_sa(&suffix_array, &mut bwt, &translated_text);
 
         // Initialize the counts table
         let mut counts = vec![0; alphabet.len()];
-        Self::initialize_counts(&mut counts, &bwt, &alphabet, dollar_pos);
+        Self::initialize_counts(&mut counts, &bwt, &alphabet, sentinel);
 
-        // initialize the occurence table
-        let mut occurence_table = vec![Bitvec::new(text_length + 1); alphabet.len()];
-        Self::initialize_occurence_table(&mut occurence_table, &bwt, &alphabet, dollar_pos);
-
-        println!("{:?}", occurence_table);
+        // Create the occurence table
+        let occurence_table = OccurenceTable::from_bwt(&bwt, sentinel, &alphabet);
 
         FMIndex {
             text:            translated_text,
             bwt:             bwt,
             alphabet:        alphabet,
             counts:          counts,
-            dollar_pos:      dollar_pos,
+            sentinel:        sentinel,
             sparse_sa:       SparseSuffixArray::from_sa(&suffix_array, sparseness_factor),
             occurence_table: occurence_table
         }
@@ -89,29 +84,29 @@ impl<A: Alphabet> FMIndex<A> {
         bwt: &mut Vec<AlphabetIndex>,
         text: &Vec<AlphabetIndex>
     ) -> usize {
-        let mut dollar_pos = 0;
+        let mut sentinel = 0;
 
         for i in 0 .. sa.len() {
             if sa[i] == 0 {
                 bwt[i] = 0;
-                dollar_pos = i;
+                sentinel = i;
             } else {
                 bwt[i] = text[sa[i] as usize - 1];
             }
         }
 
-        return dollar_pos;
+        return sentinel;
     }
 
     fn initialize_counts(
         counts: &mut Vec<usize>,
         bwt: &Vec<AlphabetIndex>,
         alphabet: &A,
-        dollar_pos: usize
+        sentinel: usize
     ) {
         // Calculate counts
         for (i, char_i) in bwt.iter().enumerate() {
-            if i == dollar_pos {
+            if i == sentinel {
                 continue;
             }
 
@@ -127,36 +122,13 @@ impl<A: Alphabet> FMIndex<A> {
         }
     }
 
-    fn initialize_occurence_table(
-        occurence_table: &mut Vec<Bitvec>,
-        bwt: &Vec<AlphabetIndex>,
-        alphabet: &A,
-        dollar_pos: usize
-    ) {
-        // TODO compare if to .filter()
-        bwt.iter().enumerate().for_each(|(i, char_i)| {
-            if i != dollar_pos {
-                occurence_table[(*char_i) as usize].set(i, true);
-            }
-        });
-
-        // Calculate the counts to allow efficient rank operations
-        for i in 0 .. alphabet.len() {
-            occurence_table[i].calculate_counts();
-        }
-    }
-
-    fn occ(&self, char_i: usize, i: usize) -> usize {
-        return self.occurence_table[char_i].rank(i);
-    }
-
     fn find_lf(&self, k: usize) -> usize {
-        if k == self.dollar_pos {
+        if k == self.sentinel {
             return 0;
         }
 
         let char_i = self.bwt[k] as usize;
-        return self.counts[char_i] + self.occ(char_i, k);
+        return self.counts[char_i] + self.occurence_table.occ(char_i, k);
     }
 
     fn find_sa(&self, k: usize) -> u32 {
@@ -180,8 +152,8 @@ impl<A: Alphabet> FMIndex<A> {
         range: &Range<usize>,
         new_range: &mut Range<usize>
     ) -> bool {
-        new_range.start = self.counts[char_i] + self.occ(char_i, range.start);
-        new_range.end = self.counts[char_i] + self.occ(char_i, range.end);
+        new_range.start = self.counts[char_i] + self.occurence_table.occ(char_i, range.start);
+        new_range.end = self.counts[char_i] + self.occurence_table.occ(char_i, range.end);
 
         return !new_range.empty();
     }
@@ -251,12 +223,12 @@ impl fmt::Debug for FMIndex<DNAAlphabet> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Text: {:?}\nBWT: {:?}\nDollar position: {}\nCounts table: {:?}\nOccurence table: {:?}",
+            "Text: {:?}\nBWT: {:?}\nSentinel position: {}\nCounts table: {:?}", /* \nOccurence table: {:?}", */
             self.text.iter().map(|x| *x as char).collect::<Vec<char>>(),
             self.bwt.iter().map(|x| *x as char).collect::<Vec<char>>(),
-            self.dollar_pos,
+            self.sentinel,
             self.counts,
-            self.occurence_table
+            //self.occurence_table
         )
     }
 }
@@ -270,8 +242,7 @@ mod tests {
             AlphabetIndex,
             DNAAlphabet
         },
-        bitvector::Bitvec,
-        fm_index::FMIndex,
+        index::fm_index::FMIndex,
         suffix_array::SuffixArray
     };
 
@@ -328,53 +299,6 @@ mod tests {
         let counts_results: [usize; 4] = [1, 8, 12, 17];
 
         assert_eq!(counts, counts_results);
-    }
-
-    #[test]
-    fn test_initialize_occurence_table() {
-        let alphabet = DNAAlphabet::default();
-
-        let translated_bwt_vec = BWT_VEC
-            .iter()
-            .map(|c| alphabet.c2i(*c))
-            .collect::<Vec<AlphabetIndex>>();
-
-        let mut occurence_table = vec![Bitvec::new(21); alphabet.len()];
-        FMIndex::<DNAAlphabet>::initialize_occurence_table(
-            &mut occurence_table,
-            &translated_bwt_vec,
-            &alphabet,
-            BWT_DOLLAR_POS
-        );
-
-        let mut result = vec![Bitvec::new(21); alphabet.len()];
-        for i in 0 .. BWT_VEC.len() {
-            if i == BWT_DOLLAR_POS {
-                continue;
-            }
-
-            result[translated_bwt_vec[i] as usize].set(i, true);
-        }
-
-        assert_eq!(occurence_table, result);
-    }
-
-    #[test]
-    fn test_occ() {
-        let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default(), 1);
-
-        let occ_results: Vec<Vec<usize>> = vec![
-            vec![0, 0, 0, 0, 0, 1, 2, 2, 3, 3, 3, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7],
-            vec![0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4],
-            vec![0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 4, 4, 4, 4, 4, 4],
-            vec![0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4],
-        ];
-
-        for i in 0 .. BWT_VEC.len() {
-            for j in 0 .. DNAAlphabet::default().len() {
-                assert_eq!(fm_index.occ(j, i), occ_results[j][i]);
-            }
-        }
     }
 
     #[test]
