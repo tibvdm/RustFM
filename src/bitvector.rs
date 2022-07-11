@@ -7,10 +7,14 @@ use bitintr::Popcnt;
 
 use crate::alphabet::{
     Alphabet,
-    AlphabetIndex
+    AlphabetIndexString
 };
 
 const ULL1: u64 = 1;
+
+// ======================================================================
+// == Bitvec
+// ======================================================================
 
 #[derive(Clone, PartialEq)]
 /// Bitvector with Jacobson’s rank
@@ -129,6 +133,10 @@ impl fmt::Debug for Bitvec {
     }
 }
 
+// ======================================================================
+// == OccurenceTable
+// ======================================================================
+
 pub struct OccurenceTable {
     // TODO: make array? because 2D vec now?
     table: Vec<Bitvec>,
@@ -138,20 +146,22 @@ pub struct OccurenceTable {
 }
 
 impl OccurenceTable {
-    pub fn from_bwt(bwt: &Vec<AlphabetIndex>, sentinel: usize, alphabet: &dyn Alphabet) -> Self {
-        let mut table = vec![Bitvec::new(bwt.len()); alphabet.len()];
+    pub fn from_bwt<A: Alphabet>(bwt: &AlphabetIndexString<A>, sentinel: usize) -> Self {
+        let alphabet_length = bwt.alphabet.len();
+
+        let mut table = vec![Bitvec::new(bwt.len()); alphabet_length];
 
         // TODO compare if to .filter()
         bwt.iter().enumerate().for_each(|(i, char_i)| {
             if i != sentinel {
-                for j in (*char_i) as usize .. alphabet.len() {
+                for j in (*char_i) as usize .. alphabet_length {
                     table[j].set(i, true);
                 }
             }
         });
 
         // Calculate the counts to allow efficient rank operations
-        for i in 0 .. alphabet.len() {
+        for i in 0 .. alphabet_length {
             table[i].calculate_counts();
         }
 
@@ -176,12 +186,17 @@ impl OccurenceTable {
     }
 }
 
+// ======================================================================
+// == Tests
+// ======================================================================
+
 #[cfg(test)]
 mod tests {
     use crate::{
         alphabet::{
             Alphabet,
             AlphabetIndex,
+            AlphabetIndexString,
             DNAAlphabet
         },
         bitvector::{
@@ -241,8 +256,10 @@ mod tests {
     fn test_initialize_occurence_table() {
         let alphabet = DNAAlphabet::default();
 
-        let mut occurence_table =
-            OccurenceTable::from_bwt(&BWT_INDEX_VEC.to_vec(), SENTINEL_POS, &alphabet);
+        let occurence_table = OccurenceTable::from_bwt(
+            &AlphabetIndexString::<DNAAlphabet>::from(BWT_INDEX_VEC.to_vec()),
+            SENTINEL_POS
+        );
 
         let mut result = vec![Bitvec::new(21); alphabet.len()];
         for i in 0 .. BWT_INDEX_VEC.len() {
@@ -261,9 +278,8 @@ mod tests {
     #[test]
     fn test_occ() {
         let occurence_table = OccurenceTable::from_bwt(
-            &BWT_INDEX_VEC.to_vec(),
-            SENTINEL_POS,
-            &DNAAlphabet::default()
+            &AlphabetIndexString::<DNAAlphabet>::from(BWT_INDEX_VEC.to_vec()),
+            SENTINEL_POS
         );
 
         let occ_results: Vec<Vec<usize>> = vec![
@@ -283,9 +299,8 @@ mod tests {
     #[test]
     fn test_cumulative_occ() {
         let occurence_table = OccurenceTable::from_bwt(
-            &BWT_INDEX_VEC.to_vec(),
-            SENTINEL_POS,
-            &DNAAlphabet::default()
+            &AlphabetIndexString::<DNAAlphabet>::from(BWT_INDEX_VEC.to_vec()),
+            SENTINEL_POS
         );
 
         let occ_results: Vec<Vec<usize>> = vec![

@@ -1,7 +1,10 @@
 use std::env;
 
 use rust_fm::{
-    alphabet::DNAAlphabet,
+    alphabet::{
+        AlphabetString,
+        DNAAlphabet
+    },
     errors::Result,
     index::fm_index::FMIndex
 };
@@ -9,7 +12,7 @@ use rust_fm::{
 fn main() -> Result<()> {
     env::set_var("RUST_BACKTRACE", "1");
 
-    let fm_index = FMIndex::new("ACCGTAAC".bytes().collect(), DNAAlphabet::default(), 1);
+    let fm_index = FMIndex::new(AlphabetString::<DNAAlphabet>::from("ACCGTAAC"), 1);
 
     //println!("{:?}", fm_index);
 

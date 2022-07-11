@@ -1,7 +1,20 @@
+use std::{
+    ops::{
+        Index,
+        IndexMut,
+        Range
+    },
+    slice::Iter
+};
+
 pub type AlphabetChar = u8;
 pub type AlphabetIndex = u8;
 
-pub trait Alphabet {
+// ======================================================================
+// == Alphabet
+// ======================================================================
+
+pub trait Alphabet: Default {
     fn i2c(&self, i: AlphabetIndex) -> AlphabetChar;
     fn c2i(&self, c: AlphabetChar) -> AlphabetIndex;
     fn len(&self) -> usize;
@@ -50,11 +63,132 @@ impl Default for DNAAlphabet {
     }
 }
 
-// pub struct ProteinAlphabet;
-//
-// impl Alphabet for ProteinAlphabet {
-//
-// }
+// ======================================================================
+// == AlphabetString
+// ======================================================================
+
+pub struct AlphabetString<A: Alphabet> {
+    bytes: Vec<AlphabetChar>,
+
+    pub alphabet: A
+}
+
+impl<A: Alphabet> AlphabetString<A> {
+    pub fn bytes(&self) -> &Vec<AlphabetChar> {
+        &self.bytes
+    }
+
+    pub fn iter(&self) -> Iter<AlphabetChar> {
+        self.bytes.iter()
+    }
+
+    pub fn len(&self) -> usize {
+        return self.bytes.len();
+    }
+}
+
+impl<A: Alphabet> Index<usize> for AlphabetString<A> {
+    type Output = AlphabetChar;
+
+    fn index(&self, pos: usize) -> &Self::Output {
+        &self.bytes[pos]
+    }
+}
+
+impl<A: Alphabet> IndexMut<usize> for AlphabetString<A> {
+    fn index_mut(&mut self, pos: usize) -> &mut Self::Output {
+        &mut self.bytes[pos]
+    }
+}
+
+impl<A: Alphabet> From<&str> for AlphabetString<A> {
+    fn from(string: &str) -> Self {
+        Self {
+            bytes:    string.bytes().collect(),
+            alphabet: Default::default()
+        }
+    }
+}
+
+// ======================================================================
+// == AlphabetIndexString
+// ======================================================================
+
+pub struct AlphabetIndexString<A: Alphabet> {
+    bytes: Vec<AlphabetIndex>,
+
+    pub alphabet: A
+}
+
+impl<A: Alphabet> AlphabetIndexString<A> {
+    pub fn new(n: usize) -> Self {
+        let bytes = vec![0; n];
+
+        Self {
+            bytes:    bytes,
+            alphabet: Default::default()
+        }
+    }
+
+    pub fn iter(&self) -> Iter<AlphabetIndex> {
+        self.bytes.iter()
+    }
+
+    pub fn bytes(&self) -> &Vec<AlphabetIndex> {
+        &self.bytes
+    }
+
+    pub fn len(&self) -> usize {
+        return self.bytes.len();
+    }
+}
+
+impl<A: Alphabet> Index<usize> for AlphabetIndexString<A> {
+    type Output = AlphabetIndex;
+
+    fn index(&self, pos: usize) -> &Self::Output {
+        &self.bytes[pos]
+    }
+}
+
+impl<A: Alphabet> Index<Range<usize>> for AlphabetIndexString<A> {
+    type Output = [AlphabetIndex];
+
+    fn index(&self, range: Range<usize>) -> &Self::Output {
+        &self.bytes[range]
+    }
+}
+
+impl<A: Alphabet> IndexMut<usize> for AlphabetIndexString<A> {
+    fn index_mut(&mut self, pos: usize) -> &mut Self::Output {
+        &mut self.bytes[pos]
+    }
+}
+
+impl<A: Alphabet> From<AlphabetString<A>> for AlphabetIndexString<A> {
+    fn from(string: AlphabetString<A>) -> Self {
+        Self {
+            bytes:    string
+                .iter()
+                .map(|c| string.alphabet.c2i(*c))
+                .collect::<Vec<AlphabetIndex>>(),
+            alphabet: Default::default()
+        }
+    }
+}
+
+impl<A: Alphabet> From<Vec<u8>> for AlphabetIndexString<A> {
+    fn from(bytes: Vec<u8>) -> Self {
+        Self {
+            bytes:    bytes,
+            alphabet: Default::default()
+        }
+    }
+}
+
+// ======================================================================
+// == Tests
+// ======================================================================
 
 #[cfg(test)]
 mod tests {

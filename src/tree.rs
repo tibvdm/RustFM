@@ -105,8 +105,8 @@ mod tests {
     use crate::{
         alphabet::{
             Alphabet,
-            AlphabetChar,
             AlphabetIndex,
+            AlphabetString,
             DNAAlphabet
         },
         tree::{
@@ -117,10 +117,7 @@ mod tests {
         }
     };
 
-    const INPUT_VEC: [AlphabetChar; 20] = [
-        b'A', b'A', b'C', b'T', b'A', b'G', b'G', b'G', b'C', b'A', b'A', b'T', b'G', b'T', b'T',
-        b'C', b'A', b'A', b'C', b'G'
-    ];
+    const INPUT: &str = "AACTAGGGCAATGTTCAACG";
 
     #[test]
     fn test_position_new() {
@@ -134,7 +131,7 @@ mod tests {
 
     #[test]
     fn test_search_tree_new() {
-        let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default(), 1);
+        let fm_index = FMIndex::new(AlphabetString::<DNAAlphabet>::from(INPUT), 1);
 
         let search_tree = SearchTree::new(&fm_index);
 
@@ -143,7 +140,7 @@ mod tests {
 
     #[test]
     fn test_extend_search_space() {
-        let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default(), 1);
+        let fm_index = FMIndex::new(AlphabetString::<DNAAlphabet>::from(INPUT), 1);
 
         let mut search_tree = SearchTree::new(&fm_index);
 
@@ -163,7 +160,7 @@ mod tests {
 
     #[test]
     fn test_iterator() {
-        let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default(), 1);
+        let fm_index = FMIndex::new(AlphabetString::<DNAAlphabet>::from(INPUT), 1);
 
         let mut search_tree = SearchTree::new(&fm_index);
 

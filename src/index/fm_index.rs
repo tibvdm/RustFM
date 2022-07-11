@@ -5,6 +5,8 @@ use crate::{
         Alphabet,
         AlphabetChar,
         AlphabetIndex,
+        AlphabetIndexString,
+        AlphabetString,
         DNAAlphabet
     },
     bitvector::OccurenceTable,
@@ -20,16 +22,17 @@ use crate::{
     }
 };
 
+// ======================================================================
+// == FMIndex
+// ======================================================================
+
 /// FM index
 pub struct FMIndex<A: Alphabet> {
     /// The original text
-    text: Vec<AlphabetIndex>,
+    text: AlphabetIndexString<A>,
 
     /// Burrows Wheeler Transform of the original text
-    bwt: Vec<AlphabetIndex>,
-
-    /// The used alphabet
-    alphabet: A,
+    bwt: AlphabetIndexString<A>,
 
     /// Counts array
     counts: Vec<usize>,
@@ -45,33 +48,29 @@ pub struct FMIndex<A: Alphabet> {
 }
 
 impl<A: Alphabet> FMIndex<A> {
-    pub fn new(text: Vec<AlphabetChar>, alphabet: A, sparseness_factor: u32) -> Self {
+    pub fn new(text: AlphabetString<A>, sparseness_factor: u32) -> Self {
         let text_length = text.len();
 
         // Translate each character to its index
-        let translated_text: Vec<AlphabetIndex> = text
-            .iter()
-            .map(|c| alphabet.c2i(*c))
-            .collect::<Vec<AlphabetIndex>>();
+        let translated_text = AlphabetIndexString::<A>::from(text);
 
         // Create the suffix array
-        let suffix_array = SuffixArray::new(&translated_text).into_parts().1;
+        let suffix_array = SuffixArray::new(translated_text.bytes()).into_parts().1;
 
         // Create BWT from suffix array
-        let mut bwt: Vec<AlphabetChar> = vec![0; text_length + 1];
+        let mut bwt = AlphabetIndexString::<A>::new(text_length + 1);
         let sentinel = Self::bwt_from_sa(&suffix_array, &mut bwt, &translated_text);
 
         // Initialize the counts table
-        let mut counts = vec![0; alphabet.len()];
-        Self::initialize_counts(&mut counts, &bwt, &alphabet, sentinel);
+        let mut counts = vec![0; bwt.alphabet.len()];
+        Self::initialize_counts(&mut counts, &bwt, sentinel);
 
         // Create the occurence table
-        let occurence_table = OccurenceTable::from_bwt(&bwt, sentinel, &alphabet);
+        let occurence_table = OccurenceTable::from_bwt(&bwt, sentinel);
 
         FMIndex {
             text:            translated_text,
             bwt:             bwt,
-            alphabet:        alphabet,
             counts:          counts,
             sentinel:        sentinel,
             sparse_sa:       SparseSuffixArray::from_sa(&suffix_array, sparseness_factor),
@@ -81,8 +80,8 @@ impl<A: Alphabet> FMIndex<A> {
 
     fn bwt_from_sa(
         sa: &Vec<u32>,
-        bwt: &mut Vec<AlphabetIndex>,
-        text: &Vec<AlphabetIndex>
+        bwt: &mut AlphabetIndexString<A>,
+        text: &AlphabetIndexString<A>
     ) -> usize {
         let mut sentinel = 0;
 
@@ -98,12 +97,7 @@ impl<A: Alphabet> FMIndex<A> {
         return sentinel;
     }
 
-    fn initialize_counts(
-        counts: &mut Vec<usize>,
-        bwt: &Vec<AlphabetIndex>,
-        alphabet: &A,
-        sentinel: usize
-    ) {
+    fn initialize_counts(counts: &mut Vec<usize>, bwt: &AlphabetIndexString<A>, sentinel: usize) {
         // Calculate counts
         for (i, char_i) in bwt.iter().enumerate() {
             if i == sentinel {
@@ -115,7 +109,7 @@ impl<A: Alphabet> FMIndex<A> {
 
         // Calculate the cumulative sum
         let mut s1 = 1;
-        for i in 0 .. alphabet.len() {
+        for i in 0 .. bwt.alphabet.len() {
             let s2 = counts[i];
             counts[i] = s1;
             s1 += s2;
@@ -143,7 +137,7 @@ impl<A: Alphabet> FMIndex<A> {
     }
 
     pub fn alphabet(&self) -> &A {
-        return &self.alphabet;
+        return &self.bwt.alphabet;
     }
 
     pub fn add_char_left(
@@ -164,7 +158,7 @@ impl<A: Alphabet> FMIndex<A> {
         let mut range = Range::new(0, self.text.len() + 1);
 
         for c in pattern.iter().rev() {
-            if !self.add_char_left(self.alphabet.c2i(*c) as usize, &range.clone(), &mut range) {
+            if !self.add_char_left(self.alphabet().c2i(*c) as usize, &range.clone(), &mut range) {
                 return result;
             }
         }
@@ -183,7 +177,7 @@ impl<A: Alphabet> FMIndex<A> {
         let reversed_pattern = pattern
             .iter()
             .rev()
-            .map(|c| self.alphabet.c2i(*c))
+            .map(|c| self.alphabet().c2i(*c))
             .collect::<Vec<AlphabetIndex>>();
 
         println!("Pattern: {:?}", pattern);
@@ -233,18 +227,26 @@ impl fmt::Debug for FMIndex<DNAAlphabet> {
     }
 }
 
+// ======================================================================
+// == Tests
+// ======================================================================
+
 #[cfg(test)]
 mod tests {
     use crate::{
         alphabet::{
             Alphabet,
             AlphabetChar,
-            AlphabetIndex,
+            AlphabetIndexString,
+            AlphabetString,
             DNAAlphabet
         },
         index::fm_index::FMIndex,
         suffix_array::SuffixArray
     };
+
+    const INPUT: &str = "AACTAGGGCAATGTTCAACG";
+    const BWT: &str = "GCACAATATGAACGGATCTAG";
 
     const INPUT_VEC: [AlphabetChar; 20] = [
         b'A', b'A', b'C', b'T', b'A', b'G', b'G', b'G', b'C', b'A', b'A', b'T', b'G', b'T', b'T',
@@ -259,20 +261,14 @@ mod tests {
 
     #[test]
     fn test_bwt_from_sa() {
-        let alphabet = DNAAlphabet::default();
-
-        let translated_input_vec = INPUT_VEC
-            .iter()
-            .map(|c| alphabet.c2i(*c))
-            .collect::<Vec<AlphabetIndex>>();
-        let translated_bwt_vec = BWT_VEC
-            .iter()
-            .map(|c| alphabet.c2i(*c))
-            .collect::<Vec<AlphabetIndex>>();
+        let translated_input_vec =
+            AlphabetIndexString::<DNAAlphabet>::from(AlphabetString::<DNAAlphabet>::from(INPUT));
+        let translated_bwt_vec =
+            AlphabetIndexString::<DNAAlphabet>::from(AlphabetString::<DNAAlphabet>::from(BWT));
 
         let suffix_array = SuffixArray::new(&INPUT_VEC.to_vec()).into_parts().1;
 
-        let mut bwt: Vec<AlphabetChar> = vec![0; 21];
+        let mut bwt = AlphabetIndexString::new(21);
         FMIndex::<DNAAlphabet>::bwt_from_sa(&suffix_array, &mut bwt, &translated_input_vec);
 
         assert_eq!(bwt[0 .. BWT_DOLLAR_POS], translated_bwt_vec[0 .. BWT_DOLLAR_POS]);
@@ -281,20 +277,11 @@ mod tests {
 
     #[test]
     fn test_initialize_counts() {
-        let alphabet = DNAAlphabet::default();
+        let translated_bwt_vec =
+            AlphabetIndexString::<DNAAlphabet>::from(AlphabetString::<DNAAlphabet>::from(BWT));
 
-        let translated_bwt_vec = BWT_VEC
-            .iter()
-            .map(|c| alphabet.c2i(*c))
-            .collect::<Vec<AlphabetIndex>>();
-
-        let mut counts = vec![0; alphabet.len()];
-        FMIndex::<DNAAlphabet>::initialize_counts(
-            &mut counts,
-            &translated_bwt_vec,
-            &alphabet,
-            BWT_DOLLAR_POS
-        );
+        let mut counts = vec![0; DNAAlphabet::default().len()];
+        FMIndex::<DNAAlphabet>::initialize_counts(&mut counts, &translated_bwt_vec, BWT_DOLLAR_POS);
 
         let counts_results: [usize; 4] = [1, 8, 12, 17];
 
@@ -303,7 +290,7 @@ mod tests {
 
     #[test]
     fn test_find_lf() {
-        let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default(), 1);
+        let fm_index = FMIndex::new(AlphabetString::<DNAAlphabet>::from(INPUT), 1);
 
         let lf_results: Vec<usize> =
             vec![12, 8, 0, 9, 1, 2, 17, 3, 18, 13, 4, 5, 10, 14, 15, 6, 19, 11, 20, 7, 16];
@@ -315,7 +302,7 @@ mod tests {
 
     #[test]
     fn test_find_sa() {
-        let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default(), 3);
+        let fm_index = FMIndex::new(AlphabetString::<DNAAlphabet>::from(INPUT), 3);
 
         let sa_results: Vec<u32> =
             vec![20, 16, 0, 9, 17, 1, 4, 10, 15, 8, 18, 2, 19, 7, 6, 5, 12, 3, 14, 11, 13];
@@ -327,7 +314,7 @@ mod tests {
 
     #[test]
     fn test_exact_match() {
-        let fm_index = FMIndex::new(INPUT_VEC.to_vec(), DNAAlphabet::default(), 3);
+        let fm_index = FMIndex::new(AlphabetString::<DNAAlphabet>::from(INPUT), 3);
 
         // Define all test cases
         let exact_match_single: Vec<Vec<AlphabetChar>> =
