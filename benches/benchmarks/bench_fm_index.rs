@@ -1,5 +1,6 @@
 use std::{
     ops::Range,
+    str,
     time::Duration
 };
 
@@ -15,9 +16,10 @@ use rand::distributions::{
 use rust_fm::{
     alphabet::{
         AlphabetChar,
+        AlphabetString,
         DNAAlphabet
     },
-    fm_index::FMIndex
+    index::fm_index::FMIndex
 };
 
 const AMOUNT_OF_CHARACTERS: usize = 1_000_000;
@@ -42,16 +44,24 @@ fn generate_characters(n: usize, characters: Vec<AlphabetChar>) -> Vec<AlphabetC
 }
 
 fn generate_fm_index(n: usize, characters: Vec<AlphabetChar>) -> FMIndex<DNAAlphabet> {
-    return FMIndex::new(generate_characters(n, characters), DNAAlphabet::default(), 1);
+    let character_vec = generate_characters(n, characters);
+    let input = unsafe { str::from_utf8_unchecked(&character_vec) };
+
+    return FMIndex::new(AlphabetString::<DNAAlphabet>::from(input), 1);
 }
 
 fn bench_new(c: &mut Criterion) {
     c.bench_function("bench_new", |b| {
         b.iter_batched(
             // Create a new string of characters
-            || generate_characters(AMOUNT_OF_CHARACTERS, vec![b'A', b'C', b'G', b'T']),
+            || {
+                let character_vec =
+                    generate_characters(AMOUNT_OF_CHARACTERS, vec![b'A', b'C', b'G', b'T']);
+                let input = unsafe { str::from_utf8_unchecked(&character_vec) };
+                return AlphabetString::<DNAAlphabet>::from(input);
+            },
             // Create a new fm index
-            |characters| FMIndex::new(characters, DNAAlphabet::default(), 1),
+            |characters| FMIndex::new(characters, 1),
             BatchSize::SmallInput
         )
     });
