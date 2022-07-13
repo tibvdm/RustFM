@@ -2,6 +2,7 @@ use std::env;
 
 use rust_fm::{
     alphabet::{
+        AlphabetPattern,
         AlphabetString,
         DNAAlphabet
     },
@@ -16,9 +17,9 @@ fn main() -> Result<()> {
 
     //println!("{:?}", fm_index);
 
-    println!("CGT: {:?}", fm_index.exact_match(&"CGT".as_bytes().to_vec()));
-    println!("CCG: {:?}", fm_index.exact_match(&"CCG".as_bytes().to_vec()));
-    println!("C: {:?}", fm_index.exact_match(&"C".as_bytes().to_vec()));
+    println!("CGT: {:?}", fm_index.exact_match(&mut AlphabetPattern::<DNAAlphabet>::from("CGT")));
+    println!("CCG: {:?}", fm_index.exact_match(&mut AlphabetPattern::<DNAAlphabet>::from("CCG")));
+    println!("C: {:?}", fm_index.exact_match(&mut AlphabetPattern::<DNAAlphabet>::from("C")));
 
     Ok(())
 }

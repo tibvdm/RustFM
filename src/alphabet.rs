@@ -1,10 +1,7 @@
-use std::{
-    ops::{
-        Index,
-        IndexMut,
-        Range
-    },
-    slice::Iter
+use std::ops::{
+    Deref,
+    DerefMut,
+    Index
 };
 
 pub type AlphabetChar = u8;
@@ -68,120 +65,99 @@ impl Default for DNAAlphabet {
 // ======================================================================
 
 pub struct AlphabetString<A: Alphabet> {
-    bytes: Vec<AlphabetChar>,
-
-    pub alphabet: A
-}
-
-impl<A: Alphabet> AlphabetString<A> {
-    pub fn bytes(&self) -> &Vec<AlphabetChar> {
-        &self.bytes
-    }
-
-    pub fn iter(&self) -> Iter<AlphabetChar> {
-        self.bytes.iter()
-    }
-
-    pub fn len(&self) -> usize {
-        return self.bytes.len();
-    }
-}
-
-impl<A: Alphabet> Index<usize> for AlphabetString<A> {
-    type Output = AlphabetChar;
-
-    fn index(&self, pos: usize) -> &Self::Output {
-        &self.bytes[pos]
-    }
-}
-
-impl<A: Alphabet> IndexMut<usize> for AlphabetString<A> {
-    fn index_mut(&mut self, pos: usize) -> &mut Self::Output {
-        &mut self.bytes[pos]
-    }
-}
-
-impl<A: Alphabet> From<&str> for AlphabetString<A> {
-    fn from(string: &str) -> Self {
-        Self {
-            bytes:    string.bytes().collect(),
-            alphabet: Default::default()
-        }
-    }
-}
-
-// ======================================================================
-// == AlphabetIndexString
-// ======================================================================
-
-pub struct AlphabetIndexString<A: Alphabet> {
     bytes: Vec<AlphabetIndex>,
 
     pub alphabet: A
 }
 
-impl<A: Alphabet> AlphabetIndexString<A> {
+impl<A: Alphabet> AlphabetString<A> {
     pub fn new(n: usize) -> Self {
-        let bytes = vec![0; n];
+        let bytes: Vec<AlphabetIndex> = vec![0; n];
 
         Self {
             bytes:    bytes,
             alphabet: Default::default()
         }
     }
+}
 
-    pub fn iter(&self) -> Iter<AlphabetIndex> {
-        self.bytes.iter()
-    }
+// Please don't hate me Rust gods
+impl<A: Alphabet> Deref for AlphabetString<A> {
+    type Target = Vec<AlphabetIndex>;
 
-    pub fn bytes(&self) -> &Vec<AlphabetIndex> {
+    fn deref(&self) -> &Self::Target {
         &self.bytes
+    }
+}
+
+// Please don't hate me Rust gods
+impl<A: Alphabet> DerefMut for AlphabetString<A> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.bytes
+    }
+}
+
+impl<A: Alphabet> From<&str> for AlphabetString<A> {
+    fn from(string: &str) -> Self {
+        let alphabet: A = Default::default();
+
+        Self {
+            bytes:    string.bytes().map(|c| alphabet.c2i(c)).collect(),
+            alphabet: alphabet
+        }
+    }
+}
+
+// ======================================================================
+// == AlphabetPattern
+// ======================================================================
+
+pub enum Direction {
+    FORWARD,
+    BACKWARD
+}
+
+impl Default for Direction {
+    fn default() -> Self {
+        Direction::FORWARD
+    }
+}
+
+pub struct AlphabetPattern<A: Alphabet> {
+    pattern: AlphabetString<A>,
+
+    pattern_length: usize,
+
+    direction: Direction
+}
+
+impl<A: Alphabet> AlphabetPattern<A> {
+    pub fn set_direction(&mut self, direction: Direction) {
+        self.direction = direction;
     }
 
     pub fn len(&self) -> usize {
-        return self.bytes.len();
+        return self.pattern_length;
     }
 }
 
-impl<A: Alphabet> Index<usize> for AlphabetIndexString<A> {
+impl<A: Alphabet> Index<usize> for AlphabetPattern<A> {
     type Output = AlphabetIndex;
 
-    fn index(&self, pos: usize) -> &Self::Output {
-        &self.bytes[pos]
-    }
-}
-
-impl<A: Alphabet> Index<Range<usize>> for AlphabetIndexString<A> {
-    type Output = [AlphabetIndex];
-
-    fn index(&self, range: Range<usize>) -> &Self::Output {
-        &self.bytes[range]
-    }
-}
-
-impl<A: Alphabet> IndexMut<usize> for AlphabetIndexString<A> {
-    fn index_mut(&mut self, pos: usize) -> &mut Self::Output {
-        &mut self.bytes[pos]
-    }
-}
-
-impl<A: Alphabet> From<AlphabetString<A>> for AlphabetIndexString<A> {
-    fn from(string: AlphabetString<A>) -> Self {
-        Self {
-            bytes:    string
-                .iter()
-                .map(|c| string.alphabet.c2i(*c))
-                .collect::<Vec<AlphabetIndex>>(),
-            alphabet: Default::default()
+    fn index(&self, i: usize) -> &Self::Output {
+        match self.direction {
+            Direction::FORWARD => &self.pattern[i],
+            Direction::BACKWARD => &self.pattern[self.pattern_length - i - 1]
         }
     }
 }
 
-impl<A: Alphabet> From<Vec<u8>> for AlphabetIndexString<A> {
-    fn from(bytes: Vec<u8>) -> Self {
+impl<A: Alphabet> From<&str> for AlphabetPattern<A> {
+    fn from(string: &str) -> Self {
         Self {
-            bytes:    bytes,
-            alphabet: Default::default()
+            pattern:        AlphabetString::<A>::from(string),
+            pattern_length: string.len(),
+            direction:      Default::default()
         }
     }
 }

@@ -5,9 +5,10 @@ use crate::{
         Alphabet,
         AlphabetChar,
         AlphabetIndex,
-        AlphabetIndexString,
+        AlphabetPattern,
         AlphabetString,
-        DNAAlphabet
+        DNAAlphabet,
+        Direction
     },
     bitvector::OccurenceTable,
     matrix::BandedMatrix,
@@ -29,10 +30,10 @@ use crate::{
 /// FM index
 pub struct FMIndex<A: Alphabet> {
     /// The original text
-    text: AlphabetIndexString<A>,
+    text: AlphabetString<A>,
 
     /// Burrows Wheeler Transform of the original text
-    bwt: AlphabetIndexString<A>,
+    bwt: AlphabetString<A>,
 
     /// Counts array
     counts: Vec<usize>,
@@ -51,15 +52,12 @@ impl<A: Alphabet> FMIndex<A> {
     pub fn new(text: AlphabetString<A>, sparseness_factor: u32) -> Self {
         let text_length = text.len();
 
-        // Translate each character to its index
-        let translated_text = AlphabetIndexString::<A>::from(text);
-
         // Create the suffix array
-        let suffix_array = SuffixArray::new(translated_text.bytes()).into_parts().1;
+        let suffix_array = SuffixArray::new(&text).into_parts().1;
 
         // Create BWT from suffix array
-        let mut bwt = AlphabetIndexString::<A>::new(text_length + 1);
-        let sentinel = Self::bwt_from_sa(&suffix_array, &mut bwt, &translated_text);
+        let mut bwt = AlphabetString::<A>::new(text_length + 1);
+        let sentinel = Self::bwt_from_sa(&suffix_array, &mut bwt, &text);
 
         // Initialize the counts table
         let mut counts = vec![0; bwt.alphabet.len()];
@@ -69,7 +67,7 @@ impl<A: Alphabet> FMIndex<A> {
         let occurence_table = OccurenceTable::from_bwt(&bwt, sentinel);
 
         FMIndex {
-            text:            translated_text,
+            text:            text,
             bwt:             bwt,
             counts:          counts,
             sentinel:        sentinel,
@@ -78,11 +76,7 @@ impl<A: Alphabet> FMIndex<A> {
         }
     }
 
-    fn bwt_from_sa(
-        sa: &Vec<u32>,
-        bwt: &mut AlphabetIndexString<A>,
-        text: &AlphabetIndexString<A>
-    ) -> usize {
+    fn bwt_from_sa(sa: &Vec<u32>, bwt: &mut AlphabetString<A>, text: &AlphabetString<A>) -> usize {
         let mut sentinel = 0;
 
         for i in 0 .. sa.len() {
@@ -97,7 +91,7 @@ impl<A: Alphabet> FMIndex<A> {
         return sentinel;
     }
 
-    fn initialize_counts(counts: &mut Vec<usize>, bwt: &AlphabetIndexString<A>, sentinel: usize) {
+    fn initialize_counts(counts: &mut Vec<usize>, bwt: &AlphabetString<A>, sentinel: usize) {
         // Calculate counts
         for (i, char_i) in bwt.iter().enumerate() {
             if i == sentinel {
@@ -152,13 +146,15 @@ impl<A: Alphabet> FMIndex<A> {
         return !new_range.empty();
     }
 
-    pub fn exact_match(&self, pattern: &Vec<AlphabetChar>) -> Vec<u32> {
+    pub fn exact_match(&self, pattern: &mut AlphabetPattern<A>) -> Vec<u32> {
         let mut result = vec![];
 
         let mut range = Range::new(0, self.text.len() + 1);
 
-        for c in pattern.iter().rev() {
-            if !self.add_char_left(self.alphabet().c2i(*c) as usize, &range.clone(), &mut range) {
+        pattern.set_direction(Direction::BACKWARD);
+
+        for i in 0 .. pattern.len() {
+            if !self.add_char_left(pattern[i] as usize, &range.clone(), &mut range) {
                 return result;
             }
         }
@@ -237,7 +233,7 @@ mod tests {
         alphabet::{
             Alphabet,
             AlphabetChar,
-            AlphabetIndexString,
+            AlphabetPattern,
             AlphabetString,
             DNAAlphabet
         },
@@ -261,14 +257,12 @@ mod tests {
 
     #[test]
     fn test_bwt_from_sa() {
-        let translated_input_vec =
-            AlphabetIndexString::<DNAAlphabet>::from(AlphabetString::<DNAAlphabet>::from(INPUT));
-        let translated_bwt_vec =
-            AlphabetIndexString::<DNAAlphabet>::from(AlphabetString::<DNAAlphabet>::from(BWT));
+        let translated_input_vec = AlphabetString::<DNAAlphabet>::from(INPUT);
+        let translated_bwt_vec = AlphabetString::<DNAAlphabet>::from(BWT);
 
         let suffix_array = SuffixArray::new(&INPUT_VEC.to_vec()).into_parts().1;
 
-        let mut bwt = AlphabetIndexString::new(21);
+        let mut bwt = AlphabetString::new(21);
         FMIndex::<DNAAlphabet>::bwt_from_sa(&suffix_array, &mut bwt, &translated_input_vec);
 
         assert_eq!(bwt[0 .. BWT_DOLLAR_POS], translated_bwt_vec[0 .. BWT_DOLLAR_POS]);
@@ -277,8 +271,7 @@ mod tests {
 
     #[test]
     fn test_initialize_counts() {
-        let translated_bwt_vec =
-            AlphabetIndexString::<DNAAlphabet>::from(AlphabetString::<DNAAlphabet>::from(BWT));
+        let translated_bwt_vec = AlphabetString::<DNAAlphabet>::from(BWT);
 
         let mut counts = vec![0; DNAAlphabet::default().len()];
         FMIndex::<DNAAlphabet>::initialize_counts(&mut counts, &translated_bwt_vec, BWT_DOLLAR_POS);
@@ -317,13 +310,23 @@ mod tests {
         let fm_index = FMIndex::new(AlphabetString::<DNAAlphabet>::from(INPUT), 3);
 
         // Define all test cases
-        let exact_match_single: Vec<Vec<AlphabetChar>> =
-            vec![vec![b'A'], vec![b'C'], vec![b'G'], vec![b'T']];
-        let exact_match_double: Vec<Vec<AlphabetChar>> =
-            vec![vec![b'A', b'A'], vec![b'A', b'C'], vec![b'A', b'G'], vec![b'A', b'T']];
-        let exact_match_start: Vec<AlphabetChar> = vec![b'A', b'A', b'C', b'T'];
-        let exact_match_end: Vec<AlphabetChar> = vec![b'A', b'A', b'C', b'G'];
-        let exact_match_not: Vec<AlphabetChar> = vec![b'C', b'C', b'C'];
+        let mut exact_match_single = vec![
+            AlphabetPattern::<DNAAlphabet>::from("A"),
+            AlphabetPattern::<DNAAlphabet>::from("C"),
+            AlphabetPattern::<DNAAlphabet>::from("G"),
+            AlphabetPattern::<DNAAlphabet>::from("T"),
+        ];
+
+        let mut exact_match_double = vec![
+            AlphabetPattern::<DNAAlphabet>::from("AA"),
+            AlphabetPattern::<DNAAlphabet>::from("AC"),
+            AlphabetPattern::<DNAAlphabet>::from("AG"),
+            AlphabetPattern::<DNAAlphabet>::from("AT"),
+        ];
+
+        let mut exact_match_start = AlphabetPattern::<DNAAlphabet>::from("AACT");
+        let mut exact_match_end = AlphabetPattern::<DNAAlphabet>::from("AACG");
+        let mut exact_match_not = AlphabetPattern::<DNAAlphabet>::from("CCC");
 
         // Define all test results
         let exact_match_single_results: Vec<Vec<u32>> = vec![
@@ -339,22 +342,22 @@ mod tests {
         let exact_match_not_results: Vec<u32> = vec![];
 
         for i in 0 .. exact_match_single.len() {
-            let mut result = fm_index.exact_match(&exact_match_single[i]);
+            let mut result = fm_index.exact_match(&mut exact_match_single[i]);
             result.sort();
 
             assert_eq!(result, exact_match_single_results[i]);
         }
 
         for i in 0 .. exact_match_double.len() {
-            let mut result = fm_index.exact_match(&exact_match_double[i]);
+            let mut result = fm_index.exact_match(&mut exact_match_double[i]);
             result.sort();
 
             assert_eq!(result, exact_match_double_results[i]);
         }
 
-        assert_eq!(fm_index.exact_match(&exact_match_start), exact_match_start_results);
-        assert_eq!(fm_index.exact_match(&exact_match_end), exact_match_end_results);
-        assert_eq!(fm_index.exact_match(&exact_match_not), exact_match_not_results);
+        assert_eq!(fm_index.exact_match(&mut exact_match_start), exact_match_start_results);
+        assert_eq!(fm_index.exact_match(&mut exact_match_end), exact_match_end_results);
+        assert_eq!(fm_index.exact_match(&mut exact_match_not), exact_match_not_results);
     }
 
     //    #[test]

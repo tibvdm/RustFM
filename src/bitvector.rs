@@ -7,7 +7,7 @@ use bitintr::Popcnt;
 
 use crate::alphabet::{
     Alphabet,
-    AlphabetIndexString
+    AlphabetString
 };
 
 const ULL1: u64 = 1;
@@ -146,7 +146,7 @@ pub struct OccurenceTable {
 }
 
 impl OccurenceTable {
-    pub fn from_bwt<A: Alphabet>(bwt: &AlphabetIndexString<A>, sentinel: usize) -> Self {
+    pub fn from_bwt<A: Alphabet>(bwt: &AlphabetString<A>, sentinel: usize) -> Self {
         let alphabet_length = bwt.alphabet.len();
 
         let mut table = vec![Bitvec::new(bwt.len()); alphabet_length];
@@ -196,7 +196,7 @@ mod tests {
         alphabet::{
             Alphabet,
             AlphabetIndex,
-            AlphabetIndexString,
+            AlphabetString,
             DNAAlphabet
         },
         bitvector::{
@@ -207,6 +207,7 @@ mod tests {
 
     const BITVEC_SIZE: usize = 10_000;
 
+    const BWT: &str = "GCACAATATGAACGGATCTAG";
     const BWT_INDEX_VEC: [AlphabetIndex; 21] =
         [2, 1, 0, 1, 0, 0, 3, 0, 3, 2, 0, 0, 1, 2, 2, 0, 3, 1, 3, 0, 2];
     const SENTINEL_POS: usize = 2;
@@ -256,10 +257,8 @@ mod tests {
     fn test_initialize_occurence_table() {
         let alphabet = DNAAlphabet::default();
 
-        let occurence_table = OccurenceTable::from_bwt(
-            &AlphabetIndexString::<DNAAlphabet>::from(BWT_INDEX_VEC.to_vec()),
-            SENTINEL_POS
-        );
+        let occurence_table =
+            OccurenceTable::from_bwt(&AlphabetString::<DNAAlphabet>::from(BWT), SENTINEL_POS);
 
         let mut result = vec![Bitvec::new(21); alphabet.len()];
         for i in 0 .. BWT_INDEX_VEC.len() {
@@ -277,10 +276,8 @@ mod tests {
 
     #[test]
     fn test_occ() {
-        let occurence_table = OccurenceTable::from_bwt(
-            &AlphabetIndexString::<DNAAlphabet>::from(BWT_INDEX_VEC.to_vec()),
-            SENTINEL_POS
-        );
+        let occurence_table =
+            OccurenceTable::from_bwt(&AlphabetString::<DNAAlphabet>::from(BWT), SENTINEL_POS);
 
         let occ_results: Vec<Vec<usize>> = vec![
             vec![0, 0, 0, 0, 0, 1, 2, 2, 3, 3, 3, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7],
@@ -298,10 +295,8 @@ mod tests {
 
     #[test]
     fn test_cumulative_occ() {
-        let occurence_table = OccurenceTable::from_bwt(
-            &AlphabetIndexString::<DNAAlphabet>::from(BWT_INDEX_VEC.to_vec()),
-            SENTINEL_POS
-        );
+        let occurence_table =
+            OccurenceTable::from_bwt(&AlphabetString::<DNAAlphabet>::from(BWT), SENTINEL_POS);
 
         let occ_results: Vec<Vec<usize>> = vec![
             vec![0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
