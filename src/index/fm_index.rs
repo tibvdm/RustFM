@@ -3,8 +3,6 @@ use std::fmt;
 use crate::{
     alphabet::{
         Alphabet,
-        AlphabetChar,
-        AlphabetIndex,
         AlphabetPattern,
         AlphabetString,
         DNAAlphabet,
@@ -49,15 +47,16 @@ pub struct FMIndex<A: Alphabet> {
 }
 
 impl<A: Alphabet> FMIndex<A> {
+    /// construct a new FM index from a text
     pub fn new(text: AlphabetString<A>, sparseness_factor: u32) -> Self {
         let text_length = text.len();
 
         // Create the suffix array
-        let suffix_array = SuffixArray::new(&text).into_parts().1;
+        let sa = SuffixArray::new(&text).into_parts().1;
 
         // Create BWT from suffix array
         let mut bwt = AlphabetString::<A>::new(text_length + 1);
-        let sentinel = Self::bwt_from_sa(&suffix_array, &mut bwt, &text);
+        let sentinel = Self::bwt_from_sa(&mut bwt, &sa, &text);
 
         // Initialize the counts table
         let mut counts = vec![0; bwt.alphabet.len()];
@@ -71,12 +70,13 @@ impl<A: Alphabet> FMIndex<A> {
             bwt:             bwt,
             counts:          counts,
             sentinel:        sentinel,
-            sparse_sa:       SparseSuffixArray::from_sa(&suffix_array, sparseness_factor),
+            sparse_sa:       SparseSuffixArray::from_sa(&sa, sparseness_factor),
             occurence_table: occurence_table
         }
     }
 
-    fn bwt_from_sa(sa: &Vec<u32>, bwt: &mut AlphabetString<A>, text: &AlphabetString<A>) -> usize {
+    /// Construct the Burrows Wheeler Transformation from the suffix array
+    fn bwt_from_sa(bwt: &mut AlphabetString<A>, sa: &Vec<u32>, text: &AlphabetString<A>) -> usize {
         let mut sentinel = 0;
 
         for i in 0 .. sa.len() {
@@ -91,6 +91,7 @@ impl<A: Alphabet> FMIndex<A> {
         return sentinel;
     }
 
+    /// Construct the counts table
     fn initialize_counts(counts: &mut Vec<usize>, bwt: &AlphabetString<A>, sentinel: usize) {
         // Calculate counts
         for (i, char_i) in bwt.iter().enumerate() {
@@ -110,6 +111,7 @@ impl<A: Alphabet> FMIndex<A> {
         }
     }
 
+    /// Find the previous character using the LF property
     fn find_lf(&self, k: usize) -> usize {
         if k == self.sentinel {
             return 0;
@@ -119,6 +121,7 @@ impl<A: Alphabet> FMIndex<A> {
         return self.counts[char_i] + self.occurence_table.occ(char_i, k);
     }
 
+    /// Find the correct position in the original text
     fn find_sa(&self, k: usize) -> u32 {
         let mut i = k;
         let mut j = 0;
@@ -130,10 +133,7 @@ impl<A: Alphabet> FMIndex<A> {
         return self.sparse_sa[i] + j;
     }
 
-    pub fn alphabet(&self) -> &A {
-        return &self.bwt.alphabet;
-    }
-
+    /// Try to add a character to the left
     pub fn add_char_left(
         &self,
         char_i: usize,
@@ -146,6 +146,7 @@ impl<A: Alphabet> FMIndex<A> {
         return !new_range.empty();
     }
 
+    /// Perform an exact match for a given pattern
     pub fn exact_match(&self, pattern: &mut AlphabetPattern<A>) -> Vec<u32> {
         let mut result = vec![];
 
@@ -166,18 +167,11 @@ impl<A: Alphabet> FMIndex<A> {
         return result;
     }
 
-    pub fn approximate_match(&self, pattern: &Vec<AlphabetChar>, k: usize) -> Vec<Position> {
+    /// Perform an approximate match for a given pattern
+    pub fn approximate_match(&self, pattern: &mut AlphabetPattern<A>, k: usize) -> Vec<Position> {
         let mut occurences: Vec<Position> = vec![];
 
-        // TODO: create pattern struct to avoid this reverse step
-        let reversed_pattern = pattern
-            .iter()
-            .rev()
-            .map(|c| self.alphabet().c2i(*c))
-            .collect::<Vec<AlphabetIndex>>();
-
-        println!("Pattern: {:?}", pattern);
-        println!("Reversed pattern: {:?}", reversed_pattern);
+        pattern.set_direction(Direction::BACKWARD);
 
         let mut matrix = BandedMatrix::new(pattern.len(), k);
 
@@ -186,8 +180,7 @@ impl<A: Alphabet> FMIndex<A> {
         search_tree.extend_search_space(&Range::new(0, self.text.len() + 1), 0);
 
         while let Some(item) = search_tree.next() {
-            let min_edit_distance =
-                matrix.update_row(&reversed_pattern, item.row(), item.character());
+            let min_edit_distance = matrix.update_row(&pattern, item.row(), item.character());
 
             if min_edit_distance < k {
                 search_tree.extend_search_space(item.range(), item.row());
@@ -263,7 +256,7 @@ mod tests {
         let suffix_array = SuffixArray::new(&INPUT_VEC.to_vec()).into_parts().1;
 
         let mut bwt = AlphabetString::new(21);
-        FMIndex::<DNAAlphabet>::bwt_from_sa(&suffix_array, &mut bwt, &translated_input_vec);
+        FMIndex::<DNAAlphabet>::bwt_from_sa(&mut bwt, &suffix_array, &translated_input_vec);
 
         assert_eq!(bwt[0 .. BWT_DOLLAR_POS], translated_bwt_vec[0 .. BWT_DOLLAR_POS]);
         assert_eq!(bwt[BWT_DOLLAR_POS + 1 .. 21], translated_bwt_vec[BWT_DOLLAR_POS + 1 .. 21]);

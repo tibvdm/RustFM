@@ -10,7 +10,11 @@ use std::{
     }
 };
 
-use crate::alphabet::AlphabetIndex;
+use crate::alphabet::{
+    Alphabet,
+    AlphabetIndex,
+    AlphabetPattern
+};
 
 pub struct BandedMatrix {
     /// Number of rows
@@ -97,9 +101,9 @@ impl BandedMatrix {
         return self[[row, column]];
     }
 
-    pub fn update_row(
+    pub fn update_row<A: Alphabet>(
         &mut self,
-        pattern: &Vec<AlphabetIndex>,
+        pattern: &AlphabetPattern<A>,
         row: usize,
         c: AlphabetIndex
     ) -> usize {
@@ -173,7 +177,13 @@ impl fmt::Debug for BandedMatrix {
 
 #[cfg(test)]
 mod tests {
-    use crate::matrix::BandedMatrix;
+    use crate::{
+        alphabet::{
+            AlphabetPattern,
+            DNAAlphabet
+        },
+        matrix::BandedMatrix
+    };
 
     #[test]
     fn test_new() {
@@ -241,7 +251,7 @@ mod tests {
     fn test_update_row() {
         let mut banded_matrix = BandedMatrix::new(6, 1);
 
-        let pattern = vec![0, 1, 0, 0, 2, 3]; // ACAAGT
+        let pattern = AlphabetPattern::<DNAAlphabet>::from("ACAAGT");
 
         assert_eq!(banded_matrix[[1, 1]], 0);
         assert_eq!(banded_matrix[[1, 2]], 0);

@@ -66,8 +66,11 @@ pub struct SearchTree<'a, A: Alphabet> {
     /// The fm index over which we span the tree
     fm_index: &'a FMIndex<A>,
 
+    /// The alphabet for this search tree
+    alphabet: A,
+
     /// The search space
-    pub search_space: Vec<Position> // TODO: remove pub
+    search_space: Vec<Position>
 }
 
 impl<'a, A: Alphabet> SearchTree<'a, A> {
@@ -76,15 +79,15 @@ impl<'a, A: Alphabet> SearchTree<'a, A> {
 
         Self {
             fm_index:     fm_index,
+            alphabet:     Default::default(),
             search_space: search_space
         }
     }
 
     pub fn extend_search_space(&mut self, range: &Range<usize>, depth: usize) {
         let mut range_copy = *range;
-        for i in 0 .. self.fm_index.alphabet().len() {
+        for i in 0 .. self.alphabet.len() {
             if self.fm_index.add_char_left(i, range, &mut range_copy) {
-                println!("{:?} --> {:?}", range, range_copy);
                 self.search_space
                     .push(Position::new(range_copy, depth + 1, i as AlphabetIndex));
             }
@@ -150,7 +153,7 @@ mod tests {
 
         assert_eq!(search_tree.search_space.len(), 4);
 
-        for i in 0 .. fm_index.alphabet().len() {
+        for i in 0 .. search_tree.alphabet.len() {
             assert_eq!(search_tree.search_space[i].range().start, extend_results[i].0);
             assert_eq!(search_tree.search_space[i].range().end, extend_results[i].1);
             assert_eq!(search_tree.search_space[i].character(), i as AlphabetIndex);
