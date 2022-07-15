@@ -1,7 +1,4 @@
-use std::{
-    ops::Range,
-    time::Duration
-};
+use std::time::Duration;
 
 use criterion::{
     criterion_group,
@@ -14,58 +11,51 @@ use fm_index::{
     BackwardSearchIndex,
     FMIndex
 };
-use rand::distributions::{
-    Distribution,
-    Uniform
-};
-use rust_fm::alphabet::AlphabetChar;
+use rust_fm::alphabet::DNAAlphabet;
 
-const AMOUNT_OF_CHARACTERS: usize = 10_000_000;
+use crate::util::generator::AlphabetGenerator;
+
+const NEW_FM_INDEX_SIZE: usize = 100_000_000;
+
+const MATCH_AMOUNT_OF_CHARACTERS: usize = 1_000_000;
+const MATCH_PATTERN_SIZE: usize = 100;
 
 const SAMPLE_SIZE: usize = 1_000;
 const MEASUREMENT_TIME: u64 = 20;
 
-fn generate_indices(n: usize, range: Range<usize>) -> Vec<usize> {
-    let mut rng = rand::thread_rng();
+fn bench_new(c: &mut Criterion) {
+    let generator = AlphabetGenerator::<DNAAlphabet>::default();
 
-    let distribution = Uniform::<usize>::from(range);
-
-    return (0 .. n).map(|_| distribution.sample(&mut rng)).collect();
+    c.bench_function("bench_new", |b| {
+        b.iter_batched(
+            // Create a new string of characters
+            || generator.generate_characters(NEW_FM_INDEX_SIZE),
+            // Create a new fm index
+            |characters| {
+                FMIndex::new(
+                    characters,
+                    RangeConverter::new(b'A', b'T'),
+                    SuffixOrderSampler::new().level(2)
+                )
+            },
+            BatchSize::SmallInput
+        )
+    });
 }
-
-fn generate_characters(n: usize, characters: Vec<AlphabetChar>) -> Vec<AlphabetChar> {
-    return generate_indices(n, 0 .. characters.len())
-        .iter()
-        .map(|i| characters[*i])
-        .collect();
-}
-
-//fn bench_new(c: &mut Criterion) {
-//    c.bench_function("bench_new",
-//        |b| b.iter_batched(
-//            // Create a new string of characters
-//            || generate_characters(AMOUNT_OF_CHARACTERS, vec![b'A', b'C', b'G', b'T']),
-//            // Create a new fm index
-//            |characters| FMIndex::new(characters, DNAAlphabet::default())
-//        , BatchSize::SmallInput)
-//    );
-//}
 
 fn bench_exact_match(c: &mut Criterion) {
-    let converter = RangeConverter::new(b'A', b'T');
+    let generator = AlphabetGenerator::<DNAAlphabet>::default();
 
+    let converter = RangeConverter::new(b'A', b'T');
     let sampler = SuffixOrderSampler::new().level(2);
 
-    let fm_index = FMIndex::new(
-        generate_characters(AMOUNT_OF_CHARACTERS, vec![b'A', b'C', b'G', b'T']),
-        converter,
-        sampler
-    );
+    let fm_index =
+        FMIndex::new(generator.generate_characters(MATCH_AMOUNT_OF_CHARACTERS), converter, sampler);
 
     c.bench_function("bench_exact_match", |b| {
         b.iter_batched_ref(
             // Create a new string of characters
-            || generate_characters(100, vec![b'A', b'C', b'G', b'T']),
+            || generator.generate_characters(MATCH_PATTERN_SIZE),
             // Create a new fm index
             |pattern| fm_index.search_backward(pattern),
             BatchSize::SmallInput
