@@ -1,5 +1,6 @@
 use std::fmt;
 
+//use serde::{Serialize, Deserialize};
 use crate::{
     alphabet::{
         Alphabet,
@@ -26,6 +27,7 @@ use crate::{
 // ======================================================================
 
 /// FM index
+//#[derive(Serialize, Deserialize)]
 pub struct FMIndex<A: Alphabet> {
     /// The original text
     text: AlphabetString<A>,
@@ -35,9 +37,6 @@ pub struct FMIndex<A: Alphabet> {
 
     /// Counts array
     counts: Vec<usize>,
-
-    /// Position of the lexicographic smallest item
-    sentinel: usize,
 
     /// The sparse suffix array
     sparse_sa: SparseSuffixArray,
@@ -69,7 +68,6 @@ impl<A: Alphabet> FMIndex<A> {
             text:            text,
             bwt:             bwt,
             counts:          counts,
-            sentinel:        sentinel,
             sparse_sa:       SparseSuffixArray::from_sa(&sa, sparseness_factor),
             occurence_table: occurence_table
         }
@@ -113,7 +111,7 @@ impl<A: Alphabet> FMIndex<A> {
 
     /// Find the previous character using the LF property
     fn find_lf(&self, k: usize) -> usize {
-        if k == self.sentinel {
+        if k == self.occurence_table.sentinel {
             return 0;
         }
 
@@ -209,7 +207,7 @@ impl fmt::Debug for FMIndex<DNAAlphabet> {
             "Text: {:?}\nBWT: {:?}\nSentinel position: {}\nCounts table: {:?}", /* \nOccurence table: {:?}", */
             self.text.iter().map(|x| *x as char).collect::<Vec<char>>(),
             self.bwt.iter().map(|x| *x as char).collect::<Vec<char>>(),
-            self.sentinel,
+            self.occurence_table.sentinel,
             self.counts,
             //self.occurence_table
         )

@@ -144,7 +144,7 @@ pub struct OccurenceTable {
     table: Vec<Bitvec>,
 
     /// Position of the sentinel character
-    sentinel: usize
+    pub sentinel: usize
 }
 
 impl OccurenceTable {
