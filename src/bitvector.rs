@@ -137,6 +137,8 @@ impl fmt::Debug for Bitvec {
 // == OccurenceTable
 // ======================================================================
 
+// TODO: interleave bitvectors to prevent an inefficient vector of vectors
+#[derive(Debug)]
 pub struct OccurenceTable {
     // TODO: make array? because 2D vec now?
     table: Vec<Bitvec>,

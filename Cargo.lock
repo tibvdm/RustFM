@@ -542,6 +542,7 @@ dependencies = [
  "criterion",
  "error-chain",
  "fm-index",
+ "num-traits",
  "rand",
  "suffix_array",
 ]

@@ -64,6 +64,7 @@ impl Default for DNAAlphabet {
 // == AlphabetString
 // ======================================================================
 
+#[derive(Clone)]
 pub struct AlphabetString<A: Alphabet> {
     bytes: Vec<AlphabetIndex>,
 
@@ -132,6 +133,10 @@ pub struct AlphabetPattern<A: Alphabet> {
 }
 
 impl<A: Alphabet> AlphabetPattern<A> {
+    pub fn direction(self) -> Direction {
+        self.direction
+    }
+
     pub fn set_direction(&mut self, direction: Direction) {
         self.direction = direction;
     }
