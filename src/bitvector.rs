@@ -4,6 +4,10 @@ use std::{
 };
 
 use bitintr::Popcnt;
+use serde::{
+    Deserialize,
+    Serialize
+};
 
 use crate::alphabet::{
     Alphabet,
@@ -16,7 +20,7 @@ const ULL1: u64 = 1;
 // == Bitvec
 // ======================================================================
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 /// Bitvector with Jacobson’s rank
 pub struct Bitvec {
     /// Size of the bitvector
@@ -26,6 +30,7 @@ pub struct Bitvec {
     bitvector: Vec<u64>,
 
     /// Interleaved first and second level counts
+    #[serde(skip_serializing, skip_deserializing)]
     counts: Vec<usize>
 }
 
@@ -138,7 +143,7 @@ impl fmt::Debug for Bitvec {
 // ======================================================================
 
 // TODO: interleave bitvectors to prevent an inefficient vector of vectors
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct OccurenceTable {
     // TODO: make array? because 2D vec now?
     table: Vec<Bitvec>,

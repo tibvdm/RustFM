@@ -4,6 +4,11 @@ use std::ops::{
     Index
 };
 
+use serde::{
+    Deserialize,
+    Serialize
+};
+
 pub type AlphabetChar = u8;
 pub type AlphabetIndex = u8;
 
@@ -64,10 +69,11 @@ impl Default for DNAAlphabet {
 // == AlphabetString
 // ======================================================================
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct AlphabetString<A: Alphabet> {
     bytes: Vec<AlphabetIndex>,
 
+    #[serde(skip_serializing, skip_deserializing)]
     pub alphabet: A
 }
 

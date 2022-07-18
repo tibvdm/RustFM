@@ -1,6 +1,10 @@
 use std::fmt;
 
-//use serde::{Serialize, Deserialize};
+use serde::{
+    Deserialize,
+    Serialize
+};
+
 use crate::{
     alphabet::{
         Alphabet,
@@ -27,7 +31,7 @@ use crate::{
 // ======================================================================
 
 /// FM index
-//#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct FMIndex<A: Alphabet> {
     /// The original text
     text: AlphabetString<A>,
