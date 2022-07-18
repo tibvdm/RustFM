@@ -208,40 +208,38 @@ impl<A: Alphabet> BidirectionalFMIndex<A> {
         return !range_pair_new.empty();
     }
 
-    //    /// Perform an exact match for a given pattern
-    //    pub fn exact_match(&self, pattern: &mut AlphabetPattern<A>) -> Vec<u32> {
-    //        let mut result = vec![];
-    //
-    //        let mut range_pair = Range::new(0, self.text.len() + 1);
-    //
-    //        match pattern.direction() {
-    //            Direction::FORWARD => {
-    //                for i in 0 .. pattern.len() {
-    //                    if !self.add_char_right(pattern[i] as usize, &range_pair.clone(), &mut
-    // range_pair) {                        return result;
-    //                    }
-    //                }
-    //
-    //                //for i in range_pair.start .. range_pair.end {
-    //                //    result.push(self.find_sa(i));
-    //                //}
-    //            }
-    //
-    //            Direction::BACKWARD => {
-    //                for i in 0 .. pattern.len() {
-    //                    if !self.add_char_left(pattern[i] as usize, &range_pair.clone(), &mut
-    // range_pair) {                        return result;
-    //                    }
-    //                }
-    //
-    //                //for i in range.start .. range.end {
-    //                //    result.push(self.find_sa(i));
-    //                //}
-    //            }
-    //        }
-    //
-    //        return result;
-    //    }
+    /// Perform an exact match for a given pattern
+    pub fn exact_match(&self, pattern: &AlphabetPattern<A>) -> RangePair<usize> {
+        let mut range_pair = RangePair::from((0, self.text.len() + 1, 0, self.text.len() + 1));
+
+        match pattern.direction() {
+            Direction::FORWARD => {
+                for i in 0 .. pattern.len() {
+                    if !self.add_char_right(
+                        pattern[i] as usize,
+                        &range_pair.clone(),
+                        &mut range_pair
+                    ) {
+                        return RangePair::from((0, 0, 0, 0));
+                    }
+                }
+            }
+
+            Direction::BACKWARD => {
+                for i in 0 .. pattern.len() {
+                    if !self.add_char_left(
+                        pattern[i] as usize,
+                        &range_pair.clone(),
+                        &mut range_pair
+                    ) {
+                        return RangePair::from((0, 0, 0, 0));
+                    }
+                }
+            }
+        }
+
+        return range_pair;
+    }
 }
 
 // ======================================================================
@@ -253,8 +251,10 @@ mod tests {
     use crate::{
         alphabet::{
             Alphabet,
+            AlphabetPattern,
             AlphabetString,
-            DNAAlphabet
+            DNAAlphabet,
+            Direction
         },
         index::bidirectional_fm_index::BidirectionalFMIndex,
         range::RangePair,
@@ -352,5 +352,60 @@ mod tests {
 
         assert_eq!(index.add_char_right(3, &range_pair.clone(), &mut range_pair), false);
         assert_eq!(range_pair, RangePair::<usize>::from((12, 12, 18, 18)));
+    }
+
+    #[test]
+    fn test_exact_match_backwards() {
+        let index = BidirectionalFMIndex::new(AlphabetString::<DNAAlphabet>::from(INPUT), 1);
+
+        // Define all test cases
+        let exact_match_single = vec![
+            AlphabetPattern::<DNAAlphabet>::new("A", Direction::BACKWARD),
+            AlphabetPattern::<DNAAlphabet>::new("C", Direction::BACKWARD),
+            AlphabetPattern::<DNAAlphabet>::new("G", Direction::BACKWARD),
+            AlphabetPattern::<DNAAlphabet>::new("T", Direction::BACKWARD),
+        ];
+
+        let exact_match_double = vec![
+            AlphabetPattern::<DNAAlphabet>::new("AA", Direction::BACKWARD),
+            AlphabetPattern::<DNAAlphabet>::new("AC", Direction::BACKWARD),
+            AlphabetPattern::<DNAAlphabet>::new("AG", Direction::BACKWARD),
+            AlphabetPattern::<DNAAlphabet>::new("AT", Direction::BACKWARD),
+        ];
+
+        let exact_match_start = AlphabetPattern::<DNAAlphabet>::new("AACT", Direction::BACKWARD);
+        let exact_match_end = AlphabetPattern::<DNAAlphabet>::new("AACG", Direction::BACKWARD);
+        let exact_match_not = AlphabetPattern::<DNAAlphabet>::new("CCC", Direction::BACKWARD);
+
+        // Define all results
+        let exact_match_single_results = vec![
+            RangePair::from((1, 8, 1, 8)),
+            RangePair::from((8, 12, 8, 12)),
+            RangePair::from((12, 17, 12, 17)),
+            RangePair::from((17, 21, 17, 21)),
+        ];
+
+        let exact_match_double_results = vec![
+            RangePair::from((1, 4, 2, 5)),
+            RangePair::from((4, 6, 8, 10)),
+            RangePair::from((6, 7, 12, 13)),
+            RangePair::from((7, 8, 17, 18)),
+        ];
+
+        let exact_match_start_results = RangePair::<usize>::from((2, 3, 18, 19));
+        let exact_match_end_results = RangePair::<usize>::from((1, 2, 13, 14));
+        let exact_match_not_results = RangePair::<usize>::from((0, 0, 0, 0));
+
+        for i in 0 .. exact_match_single.len() {
+            assert_eq!(index.exact_match(&exact_match_single[i]), exact_match_single_results[i]);
+        }
+
+        for i in 0 .. exact_match_double.len() {
+            assert_eq!(index.exact_match(&exact_match_double[i]), exact_match_double_results[i]);
+        }
+
+        assert_eq!(index.exact_match(&exact_match_start), exact_match_start_results);
+        assert_eq!(index.exact_match(&exact_match_end), exact_match_end_results);
+        assert_eq!(index.exact_match(&exact_match_not), exact_match_not_results);
     }
 }

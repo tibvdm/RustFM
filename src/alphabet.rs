@@ -133,8 +133,16 @@ pub struct AlphabetPattern<A: Alphabet> {
 }
 
 impl<A: Alphabet> AlphabetPattern<A> {
-    pub fn direction(self) -> Direction {
-        self.direction
+    pub fn new(pattern: &str, direction: Direction) -> Self {
+        Self {
+            pattern:        AlphabetString::<A>::from(pattern),
+            pattern_length: pattern.len(),
+            direction:      direction
+        }
+    }
+
+    pub fn direction(&self) -> &Direction {
+        &self.direction
     }
 
     pub fn set_direction(&mut self, direction: Direction) {
