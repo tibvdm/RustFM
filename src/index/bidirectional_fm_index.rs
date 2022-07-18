@@ -408,4 +408,60 @@ mod tests {
         assert_eq!(index.exact_match(&exact_match_end), exact_match_end_results);
         assert_eq!(index.exact_match(&exact_match_not), exact_match_not_results);
     }
+
+    // TODO: Verify this test again
+    #[test]
+    fn test_exact_match_forwards() {
+        let index = BidirectionalFMIndex::new(AlphabetString::<DNAAlphabet>::from(INPUT), 1);
+
+        // Define all test cases
+        let exact_match_single = vec![
+            AlphabetPattern::<DNAAlphabet>::new("A", Direction::FORWARD),
+            AlphabetPattern::<DNAAlphabet>::new("C", Direction::FORWARD),
+            AlphabetPattern::<DNAAlphabet>::new("G", Direction::FORWARD),
+            AlphabetPattern::<DNAAlphabet>::new("T", Direction::FORWARD),
+        ];
+
+        let exact_match_double = vec![
+            AlphabetPattern::<DNAAlphabet>::new("AA", Direction::FORWARD),
+            AlphabetPattern::<DNAAlphabet>::new("AC", Direction::FORWARD),
+            AlphabetPattern::<DNAAlphabet>::new("AG", Direction::FORWARD),
+            AlphabetPattern::<DNAAlphabet>::new("AT", Direction::FORWARD),
+        ];
+
+        let exact_match_start = AlphabetPattern::<DNAAlphabet>::new("AACT", Direction::FORWARD);
+        let exact_match_end = AlphabetPattern::<DNAAlphabet>::new("AACG", Direction::FORWARD);
+        let exact_match_not = AlphabetPattern::<DNAAlphabet>::new("CCC", Direction::FORWARD);
+
+        // Define all results
+        let exact_match_single_results = vec![
+            RangePair::from((1, 8, 1, 8)),
+            RangePair::from((8, 12, 8, 12)),
+            RangePair::from((12, 17, 12, 17)),
+            RangePair::from((17, 21, 17, 21)),
+        ];
+
+        let exact_match_double_results = vec![
+            RangePair::from((1, 4, 2, 5)),
+            RangePair::from((4, 6, 8, 10)),
+            RangePair::from((6, 7, 12, 13)),
+            RangePair::from((7, 8, 17, 18)),
+        ];
+
+        let exact_match_start_results = RangePair::<usize>::from((2, 3, 18, 19));
+        let exact_match_end_results = RangePair::<usize>::from((1, 2, 13, 14));
+        let exact_match_not_results = RangePair::<usize>::from((0, 0, 0, 0));
+
+        for i in 0 .. exact_match_single.len() {
+            assert_eq!(index.exact_match(&exact_match_single[i]), exact_match_single_results[i]);
+        }
+
+        for i in 0 .. exact_match_double.len() {
+            assert_eq!(index.exact_match(&exact_match_double[i]), exact_match_double_results[i]);
+        }
+
+        assert_eq!(index.exact_match(&exact_match_start), exact_match_start_results);
+        assert_eq!(index.exact_match(&exact_match_end), exact_match_end_results);
+        assert_eq!(index.exact_match(&exact_match_not), exact_match_not_results);
+    }
 }
