@@ -9,7 +9,7 @@ pub use suffix_array::SuffixArray;
 use crate::bitvector::Bitvec;
 
 /// Sparse suffix array for FM indices
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct SparseSuffixArray {
     /// Control vector to keep track of stored values
     pub bitvector: Bitvec,

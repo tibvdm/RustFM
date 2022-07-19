@@ -23,6 +23,7 @@ pub trait Alphabet: Default {
     fn bits(&self) -> usize;
 }
 
+#[derive(Serialize, Deserialize, Debug)]
 pub struct DNAAlphabet;
 
 impl Alphabet for DNAAlphabet {
@@ -69,11 +70,10 @@ impl Default for DNAAlphabet {
 // == AlphabetString
 // ======================================================================
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct AlphabetString<A: Alphabet> {
     bytes: Vec<AlphabetIndex>,
 
-    #[serde(skip_serializing, skip_deserializing)]
     pub alphabet: A
 }
 

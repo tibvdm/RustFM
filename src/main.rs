@@ -1,4 +1,11 @@
-use std::env;
+use std::{
+    env,
+    fs::File,
+    io::{
+        BufReader,
+        BufWriter
+    }
+};
 
 use rust_fm::{
     alphabet::{
@@ -7,19 +14,31 @@ use rust_fm::{
         DNAAlphabet
     },
     errors::Result,
-    index::fm_index::FMIndex
+    index::bidirectional_fm_index::BidirectionalFMIndex,
+    io::Binary
 };
 
 fn main() -> Result<()> {
     env::set_var("RUST_BACKTRACE", "1");
 
-    let fm_index = FMIndex::new(AlphabetString::<DNAAlphabet>::from("ACCGTAAC"), 1);
+    let fm_index = BidirectionalFMIndex::<DNAAlphabet>::new(AlphabetString::from("ACCGTAAC"), 1);
 
-    //println!("{:?}", fm_index);
+    let f = File::create("./tmp/foo").expect("Unable to create file");
+    let f = BufWriter::new(f);
 
-    println!("CGT: {:?}", fm_index.exact_match(&mut AlphabetPattern::<DNAAlphabet>::from("CGT")));
-    println!("CCG: {:?}", fm_index.exact_match(&mut AlphabetPattern::<DNAAlphabet>::from("CCG")));
-    println!("C: {:?}", fm_index.exact_match(&mut AlphabetPattern::<DNAAlphabet>::from("C")));
+    println!("TEST");
+
+    fm_index.to_bin(f)?;
+
+    let f2 = File::open("./tmp/foo").expect("Unable to create file");
+    let f2 = BufReader::new(f2);
+    let fm_loaded = BidirectionalFMIndex::from_bin(f2)?;
+
+    println!("{:?}", fm_loaded);
+
+    println!("CGT: {:?}", fm_loaded.exact_match(&AlphabetPattern::<DNAAlphabet>::from("CGT")));
+    println!("CCG: {:?}", fm_loaded.exact_match(&AlphabetPattern::<DNAAlphabet>::from("CCG")));
+    println!("C: {:?}", fm_loaded.exact_match(&AlphabetPattern::<DNAAlphabet>::from("C")));
 
     Ok(())
 }

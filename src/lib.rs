@@ -5,6 +5,7 @@ pub mod alphabet;
 pub mod bitvector;
 pub mod errors;
 pub mod index;
+pub mod io;
 pub mod matrix;
 pub mod range;
 pub mod suffix_array;

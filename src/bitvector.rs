@@ -30,7 +30,6 @@ pub struct Bitvec {
     bitvector: Vec<u64>,
 
     /// Interleaved first and second level counts
-    #[serde(skip_serializing, skip_deserializing)]
     counts: Vec<usize>
 }
 
@@ -143,7 +142,7 @@ impl fmt::Debug for Bitvec {
 // ======================================================================
 
 // TODO: interleave bitvectors to prevent an inefficient vector of vectors
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct OccurenceTable {
     // TODO: make array? because 2D vec now?
     table: Vec<Bitvec>,

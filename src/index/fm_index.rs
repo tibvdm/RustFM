@@ -31,7 +31,7 @@ use crate::{
 // ======================================================================
 
 /// FM index
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct FMIndex<A: Alphabet> {
     /// The original text
     text: AlphabetString<A>,
@@ -201,20 +201,6 @@ impl<A: Alphabet> FMIndex<A> {
 
         // TODO: test and filter redundant matches
         return occurences;
-    }
-}
-
-impl fmt::Debug for FMIndex<DNAAlphabet> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "Text: {:?}\nBWT: {:?}\nSentinel position: {}\nCounts table: {:?}", /* \nOccurence table: {:?}", */
-            self.text.iter().map(|x| *x as char).collect::<Vec<char>>(),
-            self.bwt.iter().map(|x| *x as char).collect::<Vec<char>>(),
-            self.occurence_table.sentinel,
-            self.counts,
-            //self.occurence_table
-        )
     }
 }
 
