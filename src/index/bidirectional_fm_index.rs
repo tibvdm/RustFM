@@ -1,3 +1,8 @@
+use serde::{
+    Deserialize,
+    Serialize
+};
+
 use crate::{
     alphabet::{
         Alphabet,
@@ -7,10 +12,7 @@ use crate::{
         Direction
     },
     bitvector::OccurenceTable,
-    range::{
-        Range,
-        RangePair
-    },
+    range::RangePair,
     suffix_array::{
         SparseSuffixArray,
         SuffixArray
@@ -18,6 +20,7 @@ use crate::{
 };
 
 /// Bidirectional FM index
+#[derive(Serialize, Deserialize, Debug)]
 pub struct BidirectionalFMIndex<A: Alphabet> {
     /// The original text
     text: AlphabetString<A>,
